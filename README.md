@@ -87,9 +87,9 @@ Vous devez effectuer la même procédure que ci-dessous pour vous identifier
 
 
 <br>
-<br>
 
-## Puis re-build avec :
+
+### Puis re-build avec :
 
 ```bash
 docker-compose -f docker-compose.dev.yml --env-file .dev.env up --build -d
