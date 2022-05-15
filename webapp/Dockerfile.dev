@@ -1,0 +1,7 @@
+FROM node:18.0.0
+RUN npm install -g nodemon
+RUN mkdir webapp
+ADD . /webapp
+WORKDIR /webapp
+RUN npm install
+CMD [ "npm", "start" ]

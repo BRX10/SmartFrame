@@ -1,0 +1,63 @@
+version: '2'
+
+networks:
+  smart-frame-dev:
+    driver: bridge
+
+services:
+  mongodb:
+    image: 'bitnami/mongodb:4.4'
+    container_name: 'SmartFrame-DEV-mongo_db'
+    restart: always
+    ports:
+      - '27017:27017'
+    environment:
+      MONGODB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGODB_USERNAME: ${MONGODB_USERNAME}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      MONGODB_DATABASE: ${MONGODB_DATABASE}
+      TZ: "Europe/Paris"
+    volumes:
+      - ./mongo:/bitnami
+    networks:
+      - smart-frame-dev
+
+  api-server:
+    build:
+      context: ./API
+      dockerfile: Dockerfile.dev
+    image: smartframe/server-api
+    container_name: 'SmartFrame-DEV-server_api'
+    restart: always
+    ports:
+      - '8080:8080'
+    environment:
+      DATABASE_URI: mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      PORT: 8080
+    volumes:  # Pour le dev en prod copier les fichiers + build + supprimer les sources
+      - ./API/:/API
+    depends_on:
+      - mongodb
+    networks:
+      - smart-frame-dev
+
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile.dev
+    image: smartframe/webapp
+    container_name: 'SmartFrame-DEV-webapp'
+    restart: always
+    ports:
+      - '8081:8081'
+    #command: nodemon --exec npm run dev # Pour le développement
+    environment:
+      REACT_APP_AUTH: ${TOKEN_API}
+    volumes: # Pour le dev en prod copier les fichiers + build + supprimer les sources
+      - ./webapp/:/webapp
+    depends_on:
+      - api-server
+      - mongodb
+    networks:
+      - smart-frame-dev

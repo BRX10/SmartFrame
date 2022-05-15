@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+# stage1 - build react app first 
+FROM node:18.0.0 as build
+RUN mkdir /webapp
+WORKDIR /webapp
+
+COPY package.json package-lock.json /webapp/
+RUN npm install
+
+COPY /public /webapp/public
+COPY /nginx /webapp/nginx
+COPY /src /webapp/src
+COPY postcss.config.js tailwind.config.js /webapp/
+
+ARG REACT_APP_AUTH
+ENV REACT_APP_AUTH=$REACT_APP_AUTH
+
+RUN npm run build
+
+# stage 2 - build the final image and copy the react build files
+FROM nginx as builded-webapp
+
+COPY --from=build /webapp/build /var/www
+COPY --from=build /webapp/nginx/nginx.conf /etc/nginx/conf.d
+COPY --from=build /webapp/nginx/nginx.conf /etc/nginx/gzip.conf
+
+EXPOSE 3000
+CMD ["nginx", "-g", "daemon off;"]

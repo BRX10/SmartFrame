@@ -1,0 +1,56 @@
+version: '2'
+
+networks:
+  smart-frame:
+    driver: bridge
+
+services:
+  mongodb:
+    image: 'bitnami/mongodb:4.4'
+    container_name: 'SmartFrame-mongo_db'
+    restart: always
+    ports:
+      - '27017:27017'
+    environment:
+      MONGODB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGODB_USERNAME: ${MONGODB_USERNAME}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      MONGODB_DATABASE: ${MONGODB_DATABASE}
+      TZ: "Europe/Paris"
+    networks:
+      - smart-frame
+
+  api-server:
+    build:
+      context: ./API
+      dockerfile: Dockerfile.prod
+    image: smartframe/server-api
+    container_name: 'SmartFrame-server_api'
+    restart: always
+    ports:
+      - '8080:8080'
+    environment:
+      DATABASE_URI: mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      PORT: 8080
+    depends_on:
+      - mongodb
+    networks:
+      - smart-frame
+
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile.prod
+      args:
+        REACT_APP_AUTH: ${TOKEN_API}
+    image: smartframe/webapp
+    container_name: 'SmartFrame-webapp'
+    restart: always
+    ports:
+      - '8081:3000'
+    depends_on:
+      - api-server
+      - mongodb
+    networks:
+      - smart-frame
