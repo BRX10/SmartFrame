@@ -77,7 +77,6 @@ export default function NewLibrary() {
                             title="Délai"
                             name="delay"
                             type="number"
-                            step="0.1"
                             value={delay}
                             required={true}
                             onChange={(e) => setDelay(e)}/>

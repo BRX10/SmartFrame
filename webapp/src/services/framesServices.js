@@ -25,10 +25,11 @@ export async function GetAllFrames() {
     })
 }
 
-export async function PostFrame(name, ip, inch, resolution_width, resolution_height) {
+export async function PostFrame(name, ip, key, inch, resolution_width, resolution_height) {
     let formdata = new FormData();
     formdata.append("name", name);
     formdata.append("ip", ip);
+    formdata.append("key", key);
     formdata.append("inch", inch);
     formdata.append("rWidth", resolution_width);
     formdata.append("rHeight", resolution_height);

@@ -27,6 +27,7 @@ class Frames(db.Document):
     inch = db.DecimalField(required=True)
     resolution_width = db.DecimalField(required=True)
     resolution_height = db.DecimalField(required=True)
+    key = db.StringField(required=True)
     type_frame = db.StringField(required=True)
     is_active = db.BooleanField(required=True, default=True)
     library_display = db.ReferenceField('Librarys')

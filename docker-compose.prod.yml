@@ -24,6 +24,8 @@ services:
     build:
       context: ./API
       dockerfile: Dockerfile.prod
+      args:
+        AUTH: ${TOKEN_API}
     image: smartframe/server-api
     container_name: 'SmartFrame-server_api'
     restart: always

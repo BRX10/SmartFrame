@@ -94,3 +94,19 @@ Vous devez effectuer la même procédure que ci-dessous pour vous identifier
 ```bash
 docker-compose -f docker-compose.dev.yml --env-file .dev.env up --build -d
 ```
+
+
+
+<br>
+<br>
+<br>
+<br>
+
+
+## MEMO JULES
+```bash
+crontab -e
+crontab -l
+service cron status
+service cron restart
+```

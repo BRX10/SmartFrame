@@ -5,6 +5,7 @@ import Alert from "../../components/alert";
 import Button from "../../components/button";
 import ButtonNavigation from "../../components/buttonNavigation";
 import {PostFrame} from "../../services/framesServices";
+import Spinner from "../../components/spinner";
 
 export default function NewFrame() {
 
@@ -12,10 +13,12 @@ export default function NewFrame() {
 
     const [frame, setFrame] = useState("");
     const [ip, setIp] = useState("");
+    const [key, setKey] = useState("");
     const [inch, setInch] = useState("");
     const [resolution_width, setResolution_width] = useState("");
     const [resolution_height, setResolution_height] = useState("");
 
+    const [isLoaded, setIsLoaded] = useState(true);
     const [alert, setAlert] = useState(false);
     const [typeAlert, setTypeAlert] = useState("");
     const [messageAlert, setMessageAlert] = useState("");
@@ -26,12 +29,15 @@ export default function NewFrame() {
 
     function handleSubmit (event) {
         event.preventDefault();
-        
-        PostFrame(frame, ip, inch, resolution_width, resolution_height)
+
+        setIsLoaded(false);
+        setAlert(false);
+        PostFrame(frame, ip, key, inch, resolution_width, resolution_height)
             .then((result) => {
-                setAlert(true)
-                setTypeAlert("sucess")
-                setMessageAlert("Le cadre a bien été ajouté, id : " + result.result)
+                setIsLoaded(true);
+                setAlert(true);
+                setTypeAlert("sucess");
+                setMessageAlert("Le cadre a bien été ajouté, id : " + result.result);
 
                 setFrame("");
                 setIp("");
@@ -44,10 +50,10 @@ export default function NewFrame() {
                 }, 800);
             },
             (error) => {
-                console.log("error", error)
-                setAlert(true)
-                setTypeAlert("error")
-                setMessageAlert("Il y a eu une erreur : " + error.message)
+                setIsLoaded(true);
+                setAlert(true);
+                setTypeAlert("error");
+                setMessageAlert("Il y a eu une erreur : " + error.message);
             })
     }
     
@@ -57,6 +63,7 @@ export default function NewFrame() {
                 <ButtonNavigation
                     className=" mb-2 ml-4 "
                     title="<-"
+                    disabled={!isLoaded}
                     onClick={ () => navigate("/frames", { replace: true }) } />
                 <div className={classNames(
                     
@@ -70,9 +77,14 @@ export default function NewFrame() {
                         messageAlert={messageAlert}
                         onClose={ (e) => setAlert(e) }
                     />
+
+                    { !isLoaded ? (
+                        <Spinner className="mt-4 mb-4"/>
+                    ) : null}
                     
                     <form className="flex flex-col items-center justify-center mt-1" style={{width: "100%"}} onSubmit={handleSubmit}>
-                        <Input 
+                        <Input
+                            disabled={!isLoaded}
                             title="Nom du cadre" 
                             name="name" 
                             type="text"
@@ -80,15 +92,26 @@ export default function NewFrame() {
                             required={true}
                             onChange={(e) => setFrame(e)} />
                         
-                        <Input 
+                        <Input
+                            disabled={!isLoaded}
                             title="L'adresse IP" 
                             name="ip" 
                             type="text"
                             value={ip}
                             required={true}
                             onChange={(e) => setIp(e)}/>
+
+                        <Input
+                            disabled={!isLoaded}
+                            title="Clé"
+                            name="key"
+                            type="text"
+                            value={key}
+                            required={true}
+                            onChange={(e) => setKey(e)}/>
                         
-                        <Input 
+                        <Input
+                            disabled={!isLoaded}
                             title="Taille de l'écran" 
                             name="inch" 
                             type="number" 
@@ -97,7 +120,8 @@ export default function NewFrame() {
                             required={true}
                             onChange={(e) => setInch(e)}/>
                         
-                        <Input 
+                        <Input
+                            disabled={!isLoaded}
                             title="Largeur" 
                             name="resolution_width" 
                             type="number"
@@ -105,7 +129,8 @@ export default function NewFrame() {
                             required={true}
                             onChange={(e) => setResolution_width(e)}/>
                         
-                        <Input 
+                        <Input
+                            disabled={!isLoaded}
                             title="Hauteur" 
                             name="resolution_height" 
                             type="number"
@@ -114,6 +139,7 @@ export default function NewFrame() {
                             onChange={(e) => setResolution_height(e)}/>
                         
                         <Button
+                            disabled={!isLoaded}
                             title="Enregister"
                             type="submit" />
                     </form>

@@ -5,6 +5,9 @@ from flask import request, Response
 from database.models import Frames, EventsLog, User, Librarys
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError
+from crontab import CronTab
+import requests
+import os
 
 
 class New_FrameAPI(Resource):
@@ -14,27 +17,34 @@ class New_FrameAPI(Resource):
             # Récupération des élements du posts
             form = request.form
 
-            new_frame = Frames(
-                name = form.get("name"),
-                ip = form.get("ip"),
-                inch = form.get("inch"),
-                resolution_width = form.get("rWidth"),
-                resolution_height = form.get("rHeight"),
-                type_frame = form.get("type")
-            )
+            payload = {'key': form.get("key"),'config': True}
+            response_json = requests.post("http://"+form.get("ip")+"/config", data=payload).json()
 
-            # On envoie la frame
-            new_frame.save()
+            if response_json.get("success"):
+                new_frame = Frames(
+                    name = form.get("name"),
+                    ip = form.get("ip"),
+                    inch = form.get("inch"),
+                    resolution_width = form.get("rWidth"),
+                    resolution_height = form.get("rHeight"),
+                    key = form.get("key"),
+                    type_frame = form.get("type")
+                )
 
-            # On envoie le log 
-            EventsLog(
-                type_event = "user",
-                user = User.objects.get(id=get_jwt_identity()),
-                frame = new_frame
-            ).save()
+                # On envoie la frame
+                new_frame.save()
 
-            # On return l'id
-            return {'result': str(new_frame.id)}, 200
+                # On envoie le log 
+                EventsLog(
+                    type_event = "user",
+                    user = User.objects.get(id=get_jwt_identity()),
+                    frame = new_frame
+                ).save()
+
+                # On return l'id
+                return {'result': str(new_frame.id)}, 200
+            else:
+                return {'message': response_json.get("message"), 'status': 400}, 400
 
         except (FieldDoesNotExist, ValidationError):
             raise SchemaValidationError
@@ -105,6 +115,18 @@ class FrameAPI(Resource):
                 library = library_new,
                 is_delete = False
             ).save()
+
+
+            cron = CronTab(user='root')
+            # Suppresion du cron si il existe
+            for job in cron:
+                if job.comment == id:
+                    cron.remove(job)
+
+            # Ajout du cron
+            job = cron.new(command='python3 /API/resources/cron_post_to_frame.py '+id+' '+form.get("idLibrary")+' '+os.getenv("AUTH"), comment=id)
+            job.minute.every(int(library_new.delay))
+            cron.write()
 
             return {'success': True}, 200
 
