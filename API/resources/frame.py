@@ -4,7 +4,7 @@ from bson.json_util import dumps
 from flask import request, Response
 from database.models import Frames, EventsLog, User, Librarys
 from mongoengine.errors import FieldDoesNotExist, ValidationError
-from resources.errors import SchemaValidationError, InternalServerError
+from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
 from crontab import CronTab
 import requests
 import os
@@ -55,6 +55,9 @@ class New_FrameAPI(Resource):
         except SchemaValidationError:
             raise SchemaValidationError
 
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
+
         except Exception as e:
             print(e)
             raise InternalServerError
@@ -82,6 +85,9 @@ class FrameAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)
@@ -139,6 +145,9 @@ class FrameAPI(Resource):
         except SchemaValidationError:
             raise SchemaValidationError
 
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
+
         except Exception as e:
             print(e)
             raise InternalServerError
@@ -167,6 +176,9 @@ class FrameAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)
@@ -204,6 +216,9 @@ class FramesAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)

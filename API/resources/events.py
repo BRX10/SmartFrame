@@ -3,7 +3,7 @@ from flask_restful import Resource
 from flask import request
 from database.models import Librarys, EventsLog, Frames, Pictures
 from mongoengine.errors import FieldDoesNotExist, ValidationError
-from resources.errors import SchemaValidationError, InternalServerError
+from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
 from PIL import Image
 from flask.helpers import send_file
 import requests
@@ -47,6 +47,8 @@ class Post_To_Frame(Resource):
             random_picture = random.randint(0,len(pictures)-1)
             picture =  pictures[random_picture]
             image_read = pictures[random_picture].file.read()
+
+            name_file = "tmp_" + frame.name + "_" + library.name + "_" + picture.name + ".bmp"
             
             image = Image.open(io.BytesIO(image_read))
             crop = calculate_crop_area(image.size, size_frame)
@@ -55,11 +57,11 @@ class Post_To_Frame(Resource):
             im = im.convert('I')
             ## remove alpha channel to enable conversion to palette
             im = im.convert('RGB')
-            im.save("temp.bmp")
+            im.save(name_file)
 
             ## Envoie de la requete au client/server
             payload = {'key': frame.key}
-            file_picture = {"bmp": open('temp.bmp','rb')}
+            file_picture = {"bmp": open(name_file,'rb')}
             requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload)
         
             ## On envoie le log 
@@ -71,7 +73,7 @@ class Post_To_Frame(Resource):
                 is_delete = False
             ).save()
 
-            os.remove("temp.bmp")
+            os.remove(name_file)
 
             # On return l'id
             return {'success': True}, 200
@@ -84,6 +86,9 @@ class Post_To_Frame(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)

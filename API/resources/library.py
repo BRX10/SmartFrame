@@ -4,7 +4,7 @@ from bson.json_util import dumps
 from flask import request, Response
 from database.models import Librarys, EventsLog, User
 from mongoengine.errors import FieldDoesNotExist, ValidationError
-from resources.errors import SchemaValidationError, InternalServerError
+from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
 
 
 class New_LibraryAPI(Resource):
@@ -40,6 +40,9 @@ class New_LibraryAPI(Resource):
         except SchemaValidationError:
             raise SchemaValidationError
 
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
+
         except Exception as e:
             print(e)
             raise InternalServerError
@@ -61,6 +64,9 @@ class LibraryAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)
@@ -90,6 +96,9 @@ class LibraryAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)
@@ -122,6 +131,9 @@ class LibrarysAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)

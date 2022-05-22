@@ -41,6 +41,8 @@ class UsernameDoesnotExistsError(Exception):
 class BadTokenError(Exception):
     pass
 
+class ExpiredSignatureError(Exception):
+    pass
 
 errors = {
     "InternalServerError": {
@@ -70,5 +72,9 @@ errors = {
     "BadTokenError": {
         "message": "Jeton invalide",
         "status": 403
+    },
+    "ExpiredSignatureError": {
+        "message": "Le token a expiré",
+        "status": 401
     }
 }

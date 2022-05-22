@@ -1,17 +1,27 @@
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource
+from flask import request
 from bson.json_util import dumps
 from flask import Response
 from database.models import EventsLog, User, Pictures, Librarys, Frames
 from mongoengine.errors import FieldDoesNotExist, ValidationError
-from resources.errors import SchemaValidationError, InternalServerError
+from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
 
 
 class EventsLogAPI(Resource):
     @jwt_required()
-    def get(self):
+    def post(self):
         try:
-            eventsLog = EventsLog.objects.order_by('-created_at')
+            form = request.form
+
+            page = 1
+            if form.get("page"):
+                page = int(form.get("page"))
+            page_limit = 50
+            if form.get("limit"):
+                page_limit = int(form.get("limit"))
+
+            eventsLog = EventsLog.objects.order_by('-created_at').skip(page_limit * (page - 1)).limit(page_limit)
 
             eventsLog_list = []
             for eventLog in eventsLog:
@@ -54,6 +64,9 @@ class EventsLogAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+        
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)

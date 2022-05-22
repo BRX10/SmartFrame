@@ -5,7 +5,7 @@ from bson.json_util import dumps
 from flask import request, Response
 from database.models import Pictures, Librarys, User, EventsLog
 from mongoengine.errors import FieldDoesNotExist, ValidationError
-from resources.errors import SchemaValidationError, InternalServerError
+from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
 from werkzeug.utils import secure_filename
 
 
@@ -45,6 +45,9 @@ class PictureAPI(Resource):
         except SchemaValidationError:
             raise SchemaValidationError
 
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
+
         except Exception as e:
             print(e)
             raise InternalServerError
@@ -64,6 +67,9 @@ class PictureAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)
@@ -94,6 +100,9 @@ class PictureAPI(Resource):
         except SchemaValidationError:
             raise SchemaValidationError
 
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
+
         except Exception as e:
             print(e)
             raise InternalServerError
@@ -116,6 +125,9 @@ class PictureFileAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)
@@ -147,6 +159,9 @@ class PicturesAPI(Resource):
 
         except SchemaValidationError:
             raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
 
         except Exception as e:
             print(e)

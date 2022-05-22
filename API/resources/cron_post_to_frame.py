@@ -1,8 +1,6 @@
 import requests
 import sys
-import os
 
-#python3 /API/resources/cron_post_to_frame.py 628125bc42b033ef86cee041 6280e68a06bb1684ba24d768
 # Récupération des paramètres
 id_frame = sys.argv[1]
 id_library = sys.argv[2]
