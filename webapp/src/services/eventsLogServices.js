@@ -1,12 +1,16 @@
 const { REACT_APP_AUTH } = process.env;
 
-export async function GetAllEventsLog() {
+export async function GetEventsLog(page = 1, limit = 25) {
+    let formdata = new FormData();
+    formdata.append("page", page);
+    formdata.append("limit", limit);
+    
     const response = await fetch("/api/eventslog", {
-        method: 'GET',
+        method: 'POST',
         headers: new Headers({
             'Authorization':  REACT_APP_AUTH,
         }),
-        redirect: 'follow'
+        body: formdata
     });
 
     let responseJson = await response.json();

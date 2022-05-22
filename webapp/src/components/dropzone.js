@@ -1,17 +1,22 @@
 import {useCallback} from 'react'
 import {useDropzone} from 'react-dropzone'
 
-export default function Dropzone(props) {
+export default function DropzoneImage(props) {
     const onDrop = useCallback(acceptedFiles => {
-        props.setFile(acceptedFiles[0])
+        console.log("ddd")
+        props.setFile(acceptedFiles[0]);
     }, [])
-    const {getRootProps, getInputProps} = useDropzone({onDrop})
+    
+    const {getRootProps, getInputProps, isDragActive} = useDropzone({onDrop})
     
     return (
         <div className={"w-full "+props.className}>
             <label className="inline-block mb-2 text-orange-900">{props.title}</label>
             <div className="flex items-center justify-center w-full">
                 <label className="flex flex-col w-full border-4 border-orange-200 border-dashed hover:bg-orange-100 hover:border-orange-300" {...getRootProps()}>
+                    
+                    <input type="file" className="opacity-0" {...getInputProps()}/>
+                    
                     <div className="flex flex-col items-center  pt-7">
                         { !props.file ? (
                             <>
@@ -35,7 +40,6 @@ export default function Dropzone(props) {
                             </>
                         ) }
                     </div>
-                    <input type="file" className="opacity-0" {...getInputProps()}/>
                 </label>
             </div>
         </div>

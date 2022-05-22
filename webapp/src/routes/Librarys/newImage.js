@@ -4,7 +4,7 @@ import ButtonNavigation from "../../components/buttonNavigation";
 import Alert from "../../components/alert";
 import Input from "../../components/input";
 import Button from "../../components/button";
-import Dropzone from "../../components/dropzone";
+import DropzoneImage from "../../components/dropzone";
 import { PostPictureLibrary } from "../../services/picturesServices";
 
 export default function NewImage() {
@@ -82,7 +82,7 @@ export default function NewImage() {
                             required={false}
                             disabled={true}/>
 
-                        <Dropzone
+                        <DropzoneImage
                             className="mt-4"
                             file={file}
                             setFile={ (image) => setFile(image)}

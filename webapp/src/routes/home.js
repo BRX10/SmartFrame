@@ -3,28 +3,59 @@ import { Tab } from '@headlessui/react'
 import Post from "../components/post";
 import moment from "moment-timezone";
 import "moment/locale/fr";
-import {GetAllEventsLog} from "../services/eventsLogServices";
+import {GetEventsLog} from "../services/eventsLogServices";
 import Spinner from "../components/spinner";
 import TransitionView from "../components/transition";
+import InfiniteScroll from "react-infinite-scroll-component";
 
 export default function Home() {
-
+    
+    const [hasMore, setHasMore] = useState(true);
+    const [pageServer, setPageServer] = useState(1);
     const [error, setError] = useState(null);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [categories, setCategories] = useState([]);
+    const [categories, setCategories] = useState({
+        "Serveur": [],
+        "Utilisateur": [],
+        "Évenements": []
+    });
+    
+    function getData() {
+        GetEventsLog(pageServer + 1)
+            .then((eventsLog) => {
+                    if (eventsLog["Évenements"].length === 0) {
+                        setHasMore(false);
+                        return;
+                    }
+                    setIsLoaded(true);
+                    
+                    let nexCtg = categories;
+                    nexCtg["Serveur"] = nexCtg["Serveur"].concat(eventsLog["Serveur"]);
+                    nexCtg["Utilisateur"] = nexCtg["Utilisateur"].concat(eventsLog["Utilisateur"]);
+                    nexCtg["Évenements"] = nexCtg["Évenements"].concat(eventsLog["Évenements"]);
+                    
+                    setCategories(nexCtg);
+                    setPageServer(pageServer + 1);
+                },
+                (error) => {
+                    setIsLoaded(true);
+                    setError(error);
+                }
+            );
+    }
 
     useEffect(() => {
-        GetAllEventsLog()
+        GetEventsLog()
             .then((eventsLog) => {
-                setIsLoaded(true);
-                setCategories(eventsLog);
-            },
-            (error) => {
-                setIsLoaded(true);
-                setError(error);
-            }
-        )
-    }, [])
+                    setIsLoaded(true);
+                    setCategories(eventsLog);
+                },
+                (error) => {
+                    setIsLoaded(true);
+                    setError(error);
+                }
+            );
+    }, []);
 
     function classNames(...classes) {
         return classes.filter(Boolean).join(' ')
@@ -59,6 +90,17 @@ export default function Home() {
                                 ))}
                             </Tab.List>
                             <Tab.Panels className="mt-2">
+                                <InfiniteScroll
+                                    dataLength={categories["Évenements"].length} //This is important field to render the next data
+                                    next={getData}
+                                    hasMore={hasMore}
+                                    loader={<h4>Chargement...</h4>}
+                                    endMessage={
+                                        <p style={{ textAlign: 'center' }}>
+                                            <b>Hey! Vous avez tout vu</b>
+                                        </p>
+                                    }
+                                >
                                 {Object.values(categories).map((posts, idx) => (
                                     <Tab.Panel
                                         key={idx}
@@ -164,9 +206,11 @@ export default function Home() {
                                                     ) : null}
                                                 </>
                                             ))}
+                                     
                                         </ul>
                                     </Tab.Panel>
                                 ))}
+                                </InfiniteScroll>
                             </Tab.Panels>
                         </Tab.Group>
                     </div>
