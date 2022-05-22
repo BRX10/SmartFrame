@@ -20,7 +20,7 @@ export async function GetAllLibrarys() {
             idx: item.idx,
             id: item._id.$oid,
             title: item.name,
-            subTitle: "Délai: " + item.delay + "s",
+            subTitle: "Délai: " + item.delay + "min",
             date: moment.utc(item.created_at).tz("Europe/Paris").fromNow()
         }
     });
