@@ -8,7 +8,7 @@ export default function MenuDropDown() {
                     {({ open }) => (
                         <>
                             <span className="rounded-md shadow-sm">
-                                <Menu.Button className="inline-flex justify-center w-full px-4 py-2 text-sm font-medium leading-5 text-orange-900 transition duration-150 ease-in-out bg-white rounded-md hover:text-orange-700 focus:outline-none focus:border-orange-300 focus:shadow-outline-orange active:bg-orange-50 active:text-orange-800">
+                                <Menu.Button className="inline-flex justify-center w-full px-4 py-2 text-sm font-medium leading-5 text-orange-900 transition duration-150 ease-in-out bg-white rounded-md hover:text-orange-700 focus:outline-none focus:border-orange-300 focus:shadow-outline-orange active:bg-orange-50  active:text-orange-800 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-600 dark:focus-visible:border-gray-400 dark:hover:bg-gray-400 dark:hover:text-gray-900">
                                     <span>Menu</span>
                                     
                                     <svg
@@ -36,7 +36,7 @@ export default function MenuDropDown() {
                             >
                                 <Menu.Items
                                     static
-                                    className="absolute right-0 w-56 mt-2 origin-top-right bg-white border border-orange-200 divide-y divide-orange-100 rounded-md shadow-lg outline-none"
+                                    className="absolute right-0 w-56 mt-2 origin-top-right bg-white border border-orange-200 divide-y divide-orange-100 rounded-md shadow-lg outline-none dark:bg-gray-500"
                                 >
                                 
                                     <div className="py-1">
@@ -44,7 +44,7 @@ export default function MenuDropDown() {
                                             {({ active }) => (
                                                 <a
                                                     href="/"
-                                                    className={`${ active ? "bg-orange-100 text-orange-900" : "text-orange-700" } flex justify-between w-full px-4 py-2 text-sm leading-5 text-left`}
+                                                    className={`${ active ? "bg-orange-100 text-orange-900 dark:bg-gray-900 dark:text-gray-600" : "text-orange-700 dark:text-gray-300" } flex justify-between w-full px-4 py-2 text-sm leading-5 text-left`}
                                                 >
                                                     Home
                                                 </a>
@@ -57,7 +57,7 @@ export default function MenuDropDown() {
                                             {({ active }) => (
                                                 <a
                                                     href="/frames"
-                                                    className={`${ active ? "bg-orange-100 text-orange-900" : "text-orange-700" } flex justify-between w-full px-4 py-2 text-sm leading-5 text-left`}
+                                                    className={`${ active ? "bg-orange-100 text-orange-900 dark:bg-gray-900 dark:text-gray-600" : "text-orange-700 dark:text-gray-300" } flex justify-between w-full px-4 py-2 text-sm leading-5 text-left`}
                                                 >
                                                     Cadres
                                                 </a>
@@ -68,7 +68,7 @@ export default function MenuDropDown() {
                                             {({ active }) => (
                                                 <a
                                                     href="/librarys"
-                                                    className={`${ active ? "bg-orange-100 text-orange-900" : "text-orange-700" } flex justify-between w-full px-4 py-2 text-sm leading-5 text-left`}
+                                                    className={`${ active ? "bg-orange-100 text-orange-900 dark:bg-gray-900 dark:text-gray-600" : "text-orange-700 dark:text-gray-300" } flex justify-between w-full px-4 py-2 text-sm leading-5 text-left`}
                                                 >
                                                     Bibliothéques
                                                 </a>

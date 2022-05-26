@@ -71,17 +71,17 @@ export default function Home() {
                 <div className="flex w-full flex-col items-center justify-center">
                     <div className="w-full lg:max-w-10xl md:max-w-4xl px-2 py-8" >
                         <Tab.Group>
-                            <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">
+                            <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1 dark:bg-gray-900/20">
                                 {Object.keys(categories).map((category) => (
                                     <Tab
                                         key={category}
-                                        className={({ selected }) =>
+                                        className={({ selected }) => // 'dark:bg-gray-900 dark:border-gray-600'
                                             classNames(
                                                 'w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-orange-500',
                                                 'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
                                                 selected
-                                                    ? 'bg-white shadow'
-                                                    : 'text-blue-100 hover:bg-white/[0.12] hover:text-white'
+                                                    ? 'bg-white shadow dark:bg-gray-900'
+                                                    : 'text-blue-100 hover:bg-white/[0.12] hover:text-white dark:text-gray-200'
                                             )
                                         }
                                     >
@@ -106,7 +106,8 @@ export default function Home() {
                                         key={idx}
                                         className={classNames(
                                             'rounded-xl bg-white p-3',
-                                            'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2'
+                                            'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
+                                            'dark:bg-gray-900 dark:border-gray-600'
                                         )}
                                     >
                                         <ul>

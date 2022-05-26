@@ -78,7 +78,7 @@ export default function Library() {
         return <Spinner className="mt-40"/>;
     } else {
         return (
-            <div className="flex w-full flex-col items-center justify-center mt-8 px-2">
+            <div className="flex w-full flex-col items-center justify-center mt-8 px-2 pb-10">
                 <div className={classNames('w-full lg:max-w-10xl md:max-w-4xl')}>
                     <ButtonNavigation
                         className="mb-2 ml-4 "
@@ -92,7 +92,8 @@ export default function Library() {
 
                     <div className={classNames(
                         'rounded-xl bg-white',
-                        'p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-orange-400 focus:outline-none focus:ring-2'
+                        'p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-orange-400 focus:outline-none focus:ring-2',
+                        'dark:bg-gray-900 dark:border-gray-600'
                     )}>
                         <Alert
                             className="mt-4"
@@ -138,7 +139,8 @@ export default function Library() {
 
                                 <div className={classNames(
                                     'rounded-xl bg-white',
-                                    'p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-orange-400 focus:outline-none focus:ring-2 mb-5'
+                                    'p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-orange-400 focus:outline-none focus:ring-2 ',
+                                    'dark:bg-gray-900 dark:border-gray-600'
                                 )}>
                                     <ul>
                                         {pictures.map((post) => (

@@ -15,7 +15,8 @@ export default function Table(props) {
                 
                 <div className={classNames(
                     'rounded-xl bg-white',
-                    'p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-orange-400 focus:outline-none focus:ring-2 mb-12'
+                    'p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-orange-400 focus:outline-none focus:ring-2 mb-12',
+                    'dark:bg-gray-900 dark:border-gray-600'
                 )}>
                     <ul>
                         {props.data.map((post) => (

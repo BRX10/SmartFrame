@@ -54,7 +54,8 @@ export default function NewLibrary() {
                 <div className={classNames(
 
                     'rounded-xl bg-white',
-                    'p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-orange-400 focus:outline-none focus:ring-2'
+                    'p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-orange-400 focus:outline-none focus:ring-2',
+                    'dark:bg-gray-900 dark:border-gray-600'
                 )}>
                     <Alert
                         className="mt-4"

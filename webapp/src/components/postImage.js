@@ -4,8 +4,8 @@ export default function PostImage(props) {
     }
 
     return (
-        <li className="relative rounded-md p-3 hover:bg-gray-100">
-            <div className="flex flex-row justify-between items-center">
+        <li className="relative rounded-md p-3 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 mt-1">
+            <div className="flex flex-row justify-between items-center dark:text-white">
                 <h3 className="text-sm font-medium leading-5">
                     {props.title}
                 </h3>
@@ -16,7 +16,7 @@ export default function PostImage(props) {
                     alt={props.title}/>
             </div>
 
-            <ul className="mt-1 flex space-x-1 text-xs font-normal leading-4 text-gray-500">
+            <ul className="mt-1 flex space-x-1 text-xs font-normal leading-4 text-gray-500 dark:text-gray-300">
                 { props.list.map( (item, idx) => (
                     <>
                         <li>{item}</li>
