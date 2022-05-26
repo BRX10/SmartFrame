@@ -4,8 +4,9 @@ import Input from "../../components/input";
 import Alert from "../../components/alert";
 import Button from "../../components/button";
 import ButtonNavigation from "../../components/buttonNavigation";
-import {PostFrame} from "../../services/framesServices";
+import {PostFrame, ListType, ListOrientation} from "../../services/framesServices";
 import Spinner from "../../components/spinner";
+import Select from "../../components/select";
 
 export default function NewFrame() {
 
@@ -13,11 +14,13 @@ export default function NewFrame() {
 
     const [frame, setFrame] = useState("");
     const [ip, setIp] = useState("");
+    const [type, setType] = useState({ title: "Sélectionner le type du cadre"});
     const [key, setKey] = useState("");
     const [inch, setInch] = useState("");
     const [resolution_width, setResolution_width] = useState("");
     const [resolution_height, setResolution_height] = useState("");
-
+    const [orientation, setOrientation] = useState({ title: "Sélectionner l'orientation"});
+    
     const [isLoaded, setIsLoaded] = useState(true);
     const [alert, setAlert] = useState(false);
     const [typeAlert, setTypeAlert] = useState("");
@@ -32,7 +35,7 @@ export default function NewFrame() {
 
         setIsLoaded(false);
         setAlert(false);
-        PostFrame(frame, ip, key, inch, resolution_width, resolution_height)
+        PostFrame(frame, ip, key, inch, resolution_width, resolution_height, orientation.value, type.value)
             .then((result) => {
                 setIsLoaded(true);
                 setAlert(true);
@@ -83,7 +86,7 @@ export default function NewFrame() {
                         <Spinner className="mt-4 mb-4"/>
                     ) : null}
                     
-                    <form className="flex flex-col items-center justify-center mt-1" style={{width: "100%"}} onSubmit={handleSubmit}>
+                    <form className="flex justify-between flex-col items-center  mt-1" style={{width: "100%"}} onSubmit={handleSubmit}>
                         <Input
                             disabled={!isLoaded}
                             title="Nom du cadre" 
@@ -110,6 +113,12 @@ export default function NewFrame() {
                             value={key}
                             required={true}
                             onChange={(e) => setKey(e)}/>
+
+                        <Select
+                            className="mt-1"
+                            list={ListType}
+                            selected={type}
+                            setSelected={ (select) => setType(select)} />
                         
                         <Input
                             disabled={!isLoaded}
@@ -138,6 +147,12 @@ export default function NewFrame() {
                             value={resolution_height}
                             required={true}
                             onChange={(e) => setResolution_height(e)}/>
+
+                        <Select
+                            className="mt-1"
+                            list={ListOrientation}
+                            selected={orientation}
+                            setSelected={ (select) => setOrientation(select)} />
                         
                         <Button
                             disabled={!isLoaded}

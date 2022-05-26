@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Table from "../../components/table";
 import ButtonNavigation from "../../components/buttonNavigation";
-import {ChangeFrameLibraryDisplay, DeleteFrame, GetAllFrames, GetFrame} from "../../services/framesServices";
+import {
+    ChangeFrameLibraryDisplay,
+    ConvertKeyToStringOrientation, ConvertKeyToStringType,
+    DeleteFrame,
+    GetAllFrames,
+    GetFrame
+} from "../../services/framesServices";
 import { Dialog } from "@headlessui/react";
 import Alert from "../../components/alert";
 import Spinner from "../../components/spinner";
@@ -170,7 +176,12 @@ export default function Frames() {
                                     type="text"
                                     value={frameModal.ip}
                                     disabled={true}/>
-
+                                
+                                <Select
+                                    className="mt-2"
+                                    selected={{title: ConvertKeyToStringType(frameModal.type_frame), value: frameModal.type_frame}}
+                                    disabled={true}/>
+                                
                                 <Input
                                     title="Taille de l'écran"
                                     name="inch"
@@ -187,6 +198,11 @@ export default function Frames() {
                                     title="Hauteur"
                                     name="resolution_height"
                                     value={frameModal.resolution_height}
+                                    disabled={true}/>
+
+                                <Select
+                                    className="mt-2"
+                                    selected={{title: ConvertKeyToStringOrientation(frameModal.orientation), value: frameModal.orientation}}
                                     disabled={true}/>
 
                             </div>
