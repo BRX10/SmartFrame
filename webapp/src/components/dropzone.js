@@ -2,22 +2,22 @@ import {useCallback} from 'react'
 import {useDropzone} from 'react-dropzone'
 
 export default function DropzoneImage(props) {
-    const onDrop = useCallback(acceptedFiles => {
+    /*const onDrop = useCallback(acceptedFiles => {
         console.log("ddd")
         props.setFile(acceptedFiles[0]);
-    }, [])
+    }, [])*/
     
-    const {getRootProps, getInputProps, isDragActive} = useDropzone({onDrop})
+    //const {getRootProps, getInputProps, isDragActive} = useDropzone({onDrop})
     
     return (
         <div className={"w-full "+props.className}>
-            <label className="inline-block mb-2 text-orange-900">{props.title}</label>
+            <label className="inline-block mb-2 text-orange-900 dark:text-orange-400 ">{props.title}</label>
             <div className="flex items-center justify-center w-full">
-                <label className="flex flex-col w-full border-4 border-orange-200 border-dashed hover:bg-orange-100 hover:border-orange-300" {...getRootProps()}>
+                <label className="flex flex-col w-full border-4 border-orange-200 border-dashed hover:bg-orange-100 hover:border-orange-300 dark:hover:border-gray-300 dark:hover:bg-gray-600">
                     
-                    <input type="file" className="opacity-0" {...getInputProps()}/>
+                    <input type="file" className="opacity-0" onChange={ (event) => props.setFile(event.target.files[0])} />
                     
-                    <div className="flex flex-col items-center  pt-7">
+                    <div className="flex flex-col items-center">
                         { !props.file ? (
                             <>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 mt-4 text-orange-400 group-hover:text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
