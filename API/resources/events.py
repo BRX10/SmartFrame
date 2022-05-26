@@ -70,9 +70,9 @@ class Post_To_Frame(Resource):
                     ## Envoie de la requete au client/server
                     payload = json.dumps({
                         "key": frame.key,
-                        "host": os.getenv("HOST_SER"),
-                        "port": os.getenv("PORT_SER"),
-                        "path": "/api/picturefileframe/" + str(frame.resolution_width) +'/'+ str(frame.resolution_height) +'/',
+                        "host": os.getenv("HOST_SERVER"),
+                        "port": os.getenv("PORT_SERVER"),
+                        "path": "/api/picturefileframe/" + str(int(frame.resolution_width)) +'/'+ str(int(frame.resolution_height)) +'/',
                         "filename": str(picture.id),
                         "token": os.getenv("AUTH").replace("Bearer ", "")
                     })
