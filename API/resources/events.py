@@ -4,31 +4,13 @@ from flask import request
 from database.models import Librarys, EventsLog, Frames, Pictures
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
-from PIL import Image
-from flask.helpers import send_file
+from resources.draw_image import convert_image_raspberry
+from slugify import slugify
 import requests
 import random
-import io 
+import json
 import os
 
-def calculate_crop_area(size_in, size):
-    wi, hi = size_in
-    w, h = size
-    ratio_in = wi/hi
-    ratio_out = w/h
-    x = 0
-    y = 0
-    wo = None
-    ho = None
-    if ratio_in > ratio_out:
-        wo = hi*ratio_out
-        ho = hi
-        x = (wi-wo)/2
-    else:
-        wo = wi
-        ho = wi/ratio_out
-        y = (hi-ho)/2
-    return (x, y, x+wo, y+ho)
 
 
 class Post_To_Frame(Resource):
@@ -48,35 +30,77 @@ class Post_To_Frame(Resource):
             picture =  pictures[random_picture]
             image_read = pictures[random_picture].file.read()
 
-            name_file = "tmp_" + frame.name + "_" + library.name + "_" + picture.name + ".bmp"
+            if frame.type_frame == "e_paper_raspbery":
+                name_file = "tmp/" +slugify("tmp_" + frame.name + "_" + library.name + "_" + picture.name) + ".bmp"
+                im = convert_image_raspberry(image_read, size_frame)
+                im.save(name_file)
+
+                try:
+                    ## Envoie de la requete au client/server
+                    payload = {'key': frame.key}
+                    file_picture = {"bmp": open(name_file,'rb')}
+                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload)
+
+                    ## On envoie le log 
+                    EventsLog(
+                        type_event = "server",
+                        frame = frame,
+                        library = library,
+                        picture = picture,
+                        is_delete = False
+                    ).save()
+
+                except Exception as e:
+                    print(e)
+                    EventsLog(
+                        type_event = "server-error",
+                        frame = frame,
+                        library = library,
+                        picture = picture,
+                        is_delete = False
+                    ).save()
+                    os.remove(name_file)
+                    return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
+
+                # Suppresion de l'image tampon
+                os.remove(name_file)
             
-            image = Image.open(io.BytesIO(image_read))
-            crop = calculate_crop_area(image.size, size_frame)
-            im = image.resize(size_frame, resample=Image.LANCZOS, box=crop)
-            ## grayscale. this mainly prevents image artifacts
-            im = im.convert('I')
-            ## remove alpha channel to enable conversion to palette
-            im = im.convert('RGB')
-            im.save(name_file)
+            elif frame.type_frame == "e_paper_arduino":
+                try:
+                    ## Envoie de la requete au client/server
+                    payload = json.dumps({
+                        "key": frame.key,
+                        "host": os.getenv("HOST_SER"),
+                        "port": os.getenv("PORT_SER"),
+                        "path": "/api/picturefileframe/" + str(frame.resolution_width) +'/'+ str(frame.resolution_height) +'/',
+                        "filename": str(picture.id),
+                        "token": os.getenv("AUTH").replace("Bearer ", "")
+                    })
+                    requests.post("http://"+frame.ip+"/post", data=payload)
 
-            ## Envoie de la requete au client/server
-            payload = {'key': frame.key}
-            file_picture = {"bmp": open(name_file,'rb')}
-            requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload)
-        
-            ## On envoie le log 
-            EventsLog(
-                type_event = "server",
-                frame = frame,
-                library = library,
-                picture = picture,
-                is_delete = False
-            ).save()
+                    ## On envoie le log 
+                    EventsLog(
+                        type_event = "server",
+                        frame = frame,
+                        library = library,
+                        picture = picture,
+                        is_delete = False
+                    ).save()
 
-            os.remove(name_file)
+                except Exception as e:
+                    print(e)
+                    EventsLog(
+                        type_event = "server-error",
+                        frame = frame,
+                        library = library,
+                        picture = picture,
+                        is_delete = False
+                    ).save()
 
-            # On return l'id
-            return {'success': True}, 200
+                    return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
+
+
+            return {'message': 'success', 'status': 200}, 200
 
         except (FieldDoesNotExist, ValidationError):
             raise SchemaValidationError

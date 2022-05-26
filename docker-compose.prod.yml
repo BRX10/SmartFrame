@@ -26,6 +26,8 @@ services:
       dockerfile: Dockerfile.prod
       args:
         AUTH: ${TOKEN_API}
+        HOST_SER: ${HOST_SERVER}
+        PORT_SER: ${PORT_SERVER}
     image: smartframe/server-api
     container_name: 'SmartFrame-server_api'
     restart: always

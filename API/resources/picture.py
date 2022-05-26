@@ -6,7 +6,9 @@ from flask import request, Response
 from database.models import Pictures, Librarys, User, EventsLog
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
+from resources.draw_image import convert_image_arduino
 from werkzeug.utils import secure_filename
+import io
 
 
 class PictureAPI(Resource):
@@ -109,6 +111,39 @@ class PictureAPI(Resource):
 
 
 
+class PictureFileFrameAPI(Resource):
+    @jwt_required()
+    def get(self, width, height, id):
+        try:
+            picture = Pictures.objects.get(id=id)
+            image_read = picture.file.read()
+
+            im = convert_image_arduino(image_read, (int(width), int(height)))
+
+            img_io = io.BytesIO()
+            im.save(img_io, 'bmp', quality=100)
+            img_io.seek(0)
+
+            return send_file(img_io, as_attachment=True, attachment_filename='file.bmp', mimetype='image/bmp')
+
+        except (FieldDoesNotExist, ValidationError):
+            raise SchemaValidationError
+
+        except KeyError:
+            raise SchemaValidationError
+
+        except SchemaValidationError:
+            raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
+
+        except Exception as e:
+            print(e)
+            raise InternalServerError
+
+
+
 class PictureFileAPI(Resource):
     @jwt_required()
     def get(self, id):
@@ -132,7 +167,6 @@ class PictureFileAPI(Resource):
         except Exception as e:
             print(e)
             raise InternalServerError
-
 
 
 class PicturesAPI(Resource):

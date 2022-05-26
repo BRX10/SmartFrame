@@ -6,7 +6,6 @@ id_frame = sys.argv[1]
 id_library = sys.argv[2]
 auth = sys.argv[3]
 token = sys.argv[4]
-print(auth + " " +token)
 
 ## Envoie de la requete au client/server
 headers = {

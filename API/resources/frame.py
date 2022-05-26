@@ -28,7 +28,8 @@ class New_FrameAPI(Resource):
                     resolution_width = form.get("rWidth"),
                     resolution_height = form.get("rHeight"),
                     key = form.get("key"),
-                    type_frame = form.get("type")
+                    type_frame = form.get("type"),
+                    orientation = form.get("orientation")
                 )
 
                 # On envoie la frame
@@ -122,7 +123,6 @@ class FrameAPI(Resource):
                 is_delete = False
             ).save()
 
-
             cron = CronTab(user='root')
             # Suppresion du cron si il existe
             for job in cron:
@@ -133,6 +133,14 @@ class FrameAPI(Resource):
             job = cron.new(command='python3 /API/resources/cron_post_to_frame.py '+id+' '+form.get("idLibrary")+' '+os.getenv("AUTH"), comment=id)
             job.minute.every(int(library_new.delay))
             cron.write()
+
+            # Actualisation du frame
+            headers = {
+                'Authorization': os.getenv("AUTH")
+            }
+            payload = {'frame': id, 'library': form.get("idLibrary") }
+            requests.post('http://127.0.0.1:8080/api/eventtoframe', headers=headers, data=payload).json()
+            
 
             return {'success': True}, 200
 
@@ -157,6 +165,12 @@ class FrameAPI(Resource):
         try:
             delete_frame = Frames.objects.get(id=id)
             delete_frame.update(is_active=False)
+
+            cron = CronTab(user='root')
+            # Suppresion du cron si il existe
+            for job in cron:
+                if job.comment == id:
+                    cron.remove(job)
 
             # On envoie le log 
             EventsLog(

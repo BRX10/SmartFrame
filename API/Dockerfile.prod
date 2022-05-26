@@ -3,9 +3,14 @@ FROM ubuntu:latest
 RUN apt-get update && apt-get install -y && apt-get update
 RUN apt-get install -y cron
 RUN apt-get install -y python3-pip
+RUN apt-get install -y libmagickwand-dev
 
 ARG AUTH
 ENV AUTH=$AUTH
+ARG HOST_SERVER
+ENV HOST_SERVER=$HOST_SERVER
+ARG PORT_SERVER
+ENV PORT_SERVER=$PORT_SERVER
 ENV TZ=Europe/Paris
 
 RUN mkdir API

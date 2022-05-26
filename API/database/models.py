@@ -31,6 +31,7 @@ class Frames(db.Document):
     type_frame = db.StringField(required=True)
     is_active = db.BooleanField(required=True, default=True)
     library_display = db.ReferenceField('Librarys')
+    orientation = db.StringField(required=True)
 
 
 class Librarys(db.Document):

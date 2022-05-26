@@ -1,7 +1,7 @@
 from resources.auth import SignupAPI, LoginAPI, LogoutAPI
 from resources.frame import New_FrameAPI, FrameAPI, FramesAPI
 from resources.library import New_LibraryAPI, LibraryAPI, LibrarysAPI
-from resources.picture import PictureAPI, PicturesAPI, PictureFileAPI
+from resources.picture import PictureAPI, PicturesAPI, PictureFileAPI, PictureFileFrameAPI
 from resources.eventsLog import EventsLogAPI
 from resources.events import Post_To_Frame
 
@@ -12,6 +12,7 @@ def initialize_routes(api, app):
 
     api.add_resource(EventsLogAPI, '/api/eventslog')
 
+    api.add_resource(PictureFileFrameAPI, '/api/picturefileframe/<width>/<height>/<id>')
     api.add_resource(PictureFileAPI, '/api/picturefile/<id>')
     api.add_resource(PictureAPI, '/api/picture/<id>')
     api.add_resource(PicturesAPI, '/api/pictures/<id>')  
