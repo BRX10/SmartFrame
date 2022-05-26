@@ -7,10 +7,13 @@ RUN apt-get install -y libmagickwand-dev
 
 ARG AUTH
 ENV AUTH=$AUTH
+
 ARG HOST_SERVER
 ENV HOST_SERVER=$HOST_SERVER
+
 ARG PORT_SERVER
 ENV PORT_SERVER=$PORT_SERVER
+
 ENV TZ=Europe/Paris
 
 RUN mkdir API
