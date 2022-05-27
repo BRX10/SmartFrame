@@ -27,4 +27,4 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          script: cd SmartFrame/ && sh ./home/github_pipeline/SmartFrame/deploy.sh
+          script: cd SmartFrame/ && sh ./deploy.sh
