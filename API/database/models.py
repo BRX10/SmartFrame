@@ -59,3 +59,9 @@ class EventsLog(db.Document):
     frame = db.ReferenceField('Frames')
     picture = db.ReferenceField('Pictures')
     is_delete = db.BooleanField(required=True, default=False)
+
+class EventsArduinoLog(db.Document):
+    created_at = db.DateTimeField(required=True, default=datetime.utcnow)
+    type_event = db.StringField(required=True)
+    frame = db.ReferenceField('Frames')
+    message = db.StringField(required=True)
