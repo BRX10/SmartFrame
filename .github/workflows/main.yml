@@ -27,5 +27,4 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           key: ${{ secrets.KEY }}
           fingerprint: ${{ secrets.FINGERPRINT }}
-          port: ${{ secrets.PORT }}
           script: sh deploy.sh
