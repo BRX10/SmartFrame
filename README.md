@@ -64,7 +64,7 @@ Vous devez mettre votre token dans le fichier .env dans le TOKEN_API
 
 <br>
 
-### Vous devez re-build 
+### Vous devez re-build .
 
 ```bash
 docker-compose -f docker-compose.prod.yml up --build -d
