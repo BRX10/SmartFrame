@@ -22,8 +22,9 @@ jobs:
       - name: log into VPS and trigger deploy script
         uses: appleboy/ssh-action@master
         with:
-          host: ${{secrets.HOST}} # uses secrets stored in the Secrets tab
-          username: ${{secrets.USERNAME}}
-          password: ${{secrets.PASSWORD}}
-          port: ${{secrets.PORT}}
-          script: cd SmartFrame && sh ./deploy.sh
+          host: ${{ secrets.HOST }} # uses secrets stored in the Secrets tab
+          username: ${{ secrets.USERNAME }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: cd SmartFrame/ && sh ./home/github_pipeline/SmartFrame/deploy.sh
