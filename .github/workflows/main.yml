@@ -26,5 +26,4 @@ jobs:
           username: ${{ secrets.USERNAME }}
           passphrase: ${{ secrets.PASSPHRASE }}
           key: ${{ secrets.KEY }}
-          fingerprint: ${{ secrets.FINGERPRINT }}
           script: sh deploy.sh
