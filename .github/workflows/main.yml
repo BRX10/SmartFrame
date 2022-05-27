@@ -25,4 +25,5 @@ jobs:
           host: ${{secrets.HOST}} # uses secrets stored in the Secrets tab
           username: ${{secrets.USERNAME}}
           password: ${{secrets.PASSWORD}}
-          script: sh ./home/github_pipeline/SmartFrame/deploy.sh
+          port: ${{secrets.PORT}}
+          script: cd SmartFrame && sh ./deploy.sh
