@@ -1,3 +1,4 @@
+from dbm.ndbm import library
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask.helpers import send_file
 from flask_restful import Resource
@@ -18,10 +19,12 @@ class PictureAPI(Resource):
             form = request.form
             file = request.files['image']
 
+            library = Librarys.objects.get(id=id).id
+
             new_picture = Pictures(
                 name = form.get("name"),
                 order = form.get("order"),
-                library = Librarys.objects.get(id=id).id,
+                library = library,
                 file_name = secure_filename(file.filename),
                 file = file
             )
@@ -33,6 +36,7 @@ class PictureAPI(Resource):
             EventsLog(
                 type_event = "user",
                 user = User.objects.get(id=get_jwt_identity()),
+                library = library,
                 picture = new_picture
             ).save()
 

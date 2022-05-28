@@ -115,89 +115,87 @@ export default function Home() {
                                                 <>
                                                     { post.type_event === "user" ? (
                                                         <>
-                                                            {post.frame && !post.is_delete && !post.library ? (
+                                                            {post.frame && !post.library && !post.picture ? (
                                                                 <Post
                                                                     isClick={false}
                                                                     key={idxPost}
-                                                                    title={ post.user.username + " a ajouté le cadre "+ post.frame.name}
                                                                     list={[
                                                                         moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
                                                                         post.frame.ip,
                                                                         post.frame.inch + '" - ' + post.frame.resolution_width + "x"+ post.frame.resolution_height
-                                                                    ]} />
-                                                            ) : post.frame && post.is_delete && !post.library ? (
+                                                                    ]}
+                                                                >
+                                                                    {post.user.username + (post.is_delete ? " a archivé" : " a ajouté") + " le cadre "}
+                                                                    <a href={"/frames/"+post.frame._id.$oid} className="underline">{post.frame.name}</a>
+                                                                </Post>
+                                                            ) : post.library && !post.frame && !post.picture ? (
                                                                 <Post
                                                                     isClick={false}
                                                                     key={idxPost}
-                                                                    title={ post.user.username + " a archivé le cadre "+ post.frame.name}
-                                                                    list={[
-                                                                        moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
-                                                                        post.frame.ip,
-                                                                        post.frame.inch + '" - ' + post.frame.resolution_width + "x"+ post.frame.resolution_height
-                                                                    ]} />
-                                                            ) : post.library && !post.is_delete && !post.frame ? (
-                                                                <Post
-                                                                    isClick={false}
-                                                                    key={idxPost}
-                                                                    title={ post.user.username + " a ajouté la bibliothéque "+ post.library.name}
                                                                     list={[
                                                                         moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
                                                                         "Délai: " + post.library.delay + 's'
-                                                                    ]} />
-                                                            ) : post.library && post.is_delete && !post.frame ? (
+                                                                    ]}
+                                                                >
+                                                                    {post.user.username + (post.is_delete ? " a archivé" : " a ajouté") + " la bibliothéque "}
+                                                                    <a href={"/library/"+post.library._id.$oid} className="underline">{post.library.name}</a>
+                                                                </Post>
+                                                            ) : post.picture && post.library && !post.frame ? (
                                                                 <Post
                                                                     isClick={false}
                                                                     key={idxPost}
-                                                                    title={ post.user.username + " a archivé la bibliothéque "+ post.library.name}
-                                                                    list={[
-                                                                        moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
-                                                                        "Délai: " + post.library.delay + 's'
-                                                                    ]} />
-                                                            ) : post.picture && !post.is_delete ? (
-                                                                <Post
-                                                                    isClick={false}
-                                                                    key={idxPost}
-                                                                    title={ post.user.username + " a ajouté une image "+ post.picture.name}
                                                                     list={[
                                                                         moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
                                                                         post.picture.library.name
-                                                                    ]} />
-                                                            ) : post.picture && post.is_delete ? (
+                                                                    ]}
+                                                                >
+                                                                    {post.user.username + (post.is_delete ? " a archivé" : " a ajouté") + " une image "}
+                                                                    <a href={"/library/"+post.library._id.$oid+"/"+post.picture._id.$oid} className="underline">{post.picture.name}</a>
+                                                                    {" dans la bibliothéque "}
+                                                                    <a href={"/library/"+post.library._id.$oid} className="underline">{post.library.name}</a>
+                                                                </Post>
+                                                            ) : post.picture && post.frame ? (
                                                                 <Post
                                                                     isClick={false}
                                                                     key={idxPost}
-                                                                    title={ post.user.username + " a archivé une image "+ post.picture.name}
                                                                     list={[
                                                                         moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
                                                                         post.picture.library.name
-                                                                    ]} />
-                                                            ) : post.library && post.frame && !post.is_delete ? (
+                                                                    ]}
+                                                                >
+                                                                    {post.user.username + " a envoyé l'image "}
+                                                                    <a href={"/library/"+post.library._id.$oid+"/"+post.picture._id.$oid} className="underline">{post.picture.name}</a>
+                                                                    {" sur le cadre "}
+                                                                    <a href={"/frames/"+post.frame._id.$oid} className="underline">{post.frame.name}</a>
+                                                                </Post>
+                                                            ) : post.library && post.frame ? (
                                                                 <Post
                                                                     isClick={false}
                                                                     key={idxPost}
-                                                                    title={ post.user.username + " a activé la bibliothéque " + post.library.name + " sur le cadre "+ post.frame.name}
                                                                     list={[
                                                                         moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
                                                                         post.frame.ip
-                                                                    ]} />
-                                                            ) : post.library && post.frame && post.is_delete ? (
-                                                                <Post
-                                                                    isClick={false}
-                                                                    key={idxPost}
-                                                                    title={ post.user.username +" a désactivé la bibliothéque " + post.library.name + " sur le cadre "+ post.frame.name}
-                                                                    list={[
-                                                                        moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
-                                                                        post.frame.ip
-                                                                    ]} />
+                                                                    ]}
+                                                                >
+                                                                    {post.user.username + (post.is_delete ? " a désactivé" : " a activé") + " la bibliothéque "}
+                                                                    <a href={"/library/"+post.library._id.$oid} className="underline">{post.library.name}</a>
+                                                                    {" sur le cadre "}
+                                                                    <a href={"/frames/"+post.frame._id.$oid} className="underline">{post.frame.name}</a>
+                                                                </Post>
                                                             ) : post.picture && post.frame && !post.is_delete ? (
                                                                 <Post
                                                                     isClick={false}
                                                                     key={idxPost}
-                                                                    title={ post.user.username +" a envoyé l'image " + post.picture.name + " sur le cadre "+ post.frame.name}
                                                                     list={[
                                                                         moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
                                                                         post.frame.ip
-                                                                    ]} />
+                                                                    ]}
+                                                                >
+                                                                    {post.user.username + " a envoyé l'image "}
+                                                                    <a href={"/library/"+post.library._id.$oid+"/"+post.picture._id.$oid} className="underline">{post.picture.name}</a>
+                                                                    {" sur le cadre "}
+                                                                    <a href={"/frames/"+post.frame._id.$oid} className="underline">{post.frame.name}</a>
+                                                                </Post>
                                                             ) : null }
                                                         </>
                                                     ) : post.type_event === "server" ? (
@@ -206,11 +204,16 @@ export default function Home() {
                                                                 <Post
                                                                     isClick={false}
                                                                     key={idxPost}
-                                                                    title={ "L'image " + post.picture.name + " a été envoyé sur le cadre "+ post.frame.name}
                                                                     list={[
                                                                         moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
                                                                         post.frame.ip
-                                                                    ]} />
+                                                                    ]}
+                                                                >
+                                                                    {"L'image "}
+                                                                    <a href={"/library/"+post.library._id.$oid+"/"+post.picture._id.$oid} className="underline">{post.picture.name}</a>
+                                                                    {" a été envoyé sur le cadre "}
+                                                                    <a href={"/frames/"+post.frame._id.$oid} className="underline">{post.frame.name}</a>
+                                                                </Post>
                                                             ) : null }
                                                         </>
                                                     ) : post.type_event === "server-error" ? (
@@ -219,11 +222,16 @@ export default function Home() {
                                                                 <Post
                                                                     isClick={false}
                                                                     key={idxPost}
-                                                                    title={ "Une erreur est survenue pendant l'envoie de l'image " + post.picture.name + " sur le cadre "+ post.frame.name}
                                                                     list={[
                                                                         moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
                                                                         post.frame.ip
-                                                                    ]} />
+                                                                    ]} 
+                                                                >
+                                                                    {"Une erreur est survenue pendant l'envoie de l'image "}
+                                                                    <a href={"/library/"+post.library._id.$oid+"/"+post.picture._id.$oid} className="underline">{post.picture.name}</a>
+                                                                    {" sur le cadre "}
+                                                                    <a href={"/frames/"+post.frame._id.$oid} className="underline">{post.frame.name}</a>
+                                                                </Post>
                                                             ) : null }
                                                         </>
                                                     ) : null}

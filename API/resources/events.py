@@ -170,6 +170,7 @@ class Post_To_Frame_ImageUser(Resource):
                         user = User.objects.get(id=get_jwt_identity()),
                         frame = frame,
                         picture = picture,
+                        library = picture.library.id,
                         is_delete = False
                     ).save()
 
@@ -199,6 +200,7 @@ class Post_To_Frame_ImageUser(Resource):
                         user = User.objects.get(id=get_jwt_identity()),
                         frame = frame,
                         picture = picture,
+                        library = picture.library.id,
                         is_delete = False
                     ).save()
 
