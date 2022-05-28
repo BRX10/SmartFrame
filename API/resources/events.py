@@ -38,7 +38,7 @@ class Post_To_Frame(Resource):
                 ## Récupération du dernier event pour en déterminer la derniere image de la library donc le chiffre de l'ordre
                 try:
                     event = EventsLog.objects(frame=frame.id,library=library.id).order_by('-created_at').first()
-                    order = int(event.picture.order) + 1
+                    order = int(event.picture.order)
                     if order >= len(pictures):
                         picture =  pictures[0]
                         image_read = pictures[0].file.read()
