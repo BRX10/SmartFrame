@@ -100,7 +100,7 @@ class Post_To_Frame(Resource):
                     return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
 
 
-            return {'message': 'success', 'status': 200}, 200
+            return {'success': True, 'status': 200}, 200
 
         except (FieldDoesNotExist, ValidationError):
             raise SchemaValidationError
