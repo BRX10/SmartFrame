@@ -58,7 +58,7 @@ export default function ArduinoLog() {
         return (
             <TransitionView>
                 <div className="flex w-full flex-col items-center justify-center">
-                    <div className="w-full lg:max-w-10xl md:max-w-6xl px-2 py-8" >
+                    <div className="w-full lg:max-w-10xl md:max-w-4xl px-2 py-8" >
                         <InfiniteScroll
                             dataLength={logs.length} //This is important field to render the next data
                             next={getData}
@@ -74,7 +74,8 @@ export default function ArduinoLog() {
                                     {logs.map((log, idxLog) => (
                                         <p
                                             key={idxLog}
-                                            className="flex gap-5 text-xs flex-row bg-gray-900 text-gray-500 border-gray-600 focus-visible:border-gray-400 hover:bg-yellow-600 hover:text-gray-900 "
+                                            className="flex gap-5 flex-row bg-gray-900 text-gray-500 border-gray-600 focus-visible:border-gray-400 hover:bg-yellow-600 hover:text-gray-900 "
+                                            style={{fontSize: ".55rem"}}
                                         >
                                             <a href={"/frames/"+log.frame._id.$oid} className="underline">{log.frame.name}</a>
                                             {moment.utc(log.created_at).tz("Europe/Paris").fromNow()}
