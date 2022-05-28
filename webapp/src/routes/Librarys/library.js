@@ -205,6 +205,7 @@ export default function Library() {
 
     function archivePicture (id) {
         setAlertModal(false);
+        setIsLoadedSendModal(false);
 
         DeletePicture(id)
             .then((_) => {
@@ -212,6 +213,7 @@ export default function Library() {
                     setTypeAlertModal("sucess");
                     setMessageAlertModal("L'image a bien été archivé");
                     setIsArchive(!isArchive);
+                    setIsLoadedSendModal(true);
 
                     setTimeout(function() {
                         setIsOpen(false);
@@ -220,6 +222,7 @@ export default function Library() {
                     }, 1000);
                 },
                 (error) => {
+                    setIsLoadedSendModal(true);
                     setAlertModal(true);
                     setTypeAlertModal("error");
                     setMessageAlertModal("Il y a eu une erreur : " + error.message);

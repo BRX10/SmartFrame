@@ -38,7 +38,7 @@ class New_FrameAPI(Resource):
                 'token': os.getenv("AUTH").replace("Bearer ", ""),
                 'host': os.getenv("HOST_SERVER")
             }
-            response_json = requests.post("http://"+form.get("ip")+"/config", data=payload).json()
+            response_json = requests.post("http://"+form.get("ip")+"/config", data=payload, timeout=8).json()
 
             if response_json.get("success"):
                 
@@ -175,23 +175,35 @@ class FrameAPI(Resource):
     def delete(self, id):
         try:
             delete_frame = Frames.objects.get(id=id)
-            delete_frame.update(is_active=False)
 
-            cron = CronTab(user='root')
-            # Suppresion du cron si il existe
-            for job in cron:
-                if job.comment == id:
-                    cron.remove(job)
+            payload = {
+                'key': delete_frame.key, 
+                'config': False,
+            }
+            response_json = requests.post("http://"+delete_frame.ip+"/reset", data=payload, timeout=8).json()
 
-            # On envoie le log 
-            EventsLog(
-                type_event = "user",
-                user = User.objects.get(id=get_jwt_identity()),
-                frame = delete_frame,
-                is_delete = True
-            ).save()
+            if response_json.get("success"):
+                
+                delete_frame.update(is_active=False)
 
-            return {'success': True}, 200
+                cron = CronTab(user='root')
+                # Suppresion du cron si il existe
+                for job in cron:
+                    if job.comment == id:
+                        cron.remove(job)
+
+                # On envoie le log 
+                EventsLog(
+                    type_event = "user",
+                    user = User.objects.get(id=get_jwt_identity()),
+                    frame = delete_frame,
+                    is_delete = True
+                ).save()
+
+                return {'success': True}, 200
+
+            else: 
+                return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
 
         except (FieldDoesNotExist, ValidationError):
             raise SchemaValidationError

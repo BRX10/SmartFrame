@@ -137,6 +137,7 @@ export default function Frames() {
     
     function archiveFrame (id) {
         setAlertModal(false);
+        setIsLoadedSendModal(false);
         
         DeleteFrame(id)
             .then((_) => {
@@ -144,6 +145,7 @@ export default function Frames() {
                 setTypeAlertModal("sucess");
                 setMessageAlertModal("Le cadre a bien été archivé");
                 setIsArchive(!isArchive);
+                setIsLoadedSendModal(true);
 
                 setTimeout(function() {
                     setIsOpen(false);
@@ -152,6 +154,7 @@ export default function Frames() {
                 }, 1000);
             },
             (error) => {
+                setIsLoadedSendModal(true);
                 setAlertModal(true);
                 setTypeAlertModal("error");
                 setMessageAlertModal("Il y a eu une erreur : " + error.message);

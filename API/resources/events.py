@@ -36,14 +36,19 @@ class Post_To_Frame(Resource):
 
             elif library.action == "order":
                 ## Récupération du dernier event pour en déterminer la derniere image de la library donc le chiffre de l'ordre
-                event = EventsLog.objects(frame=frame.id,library=library.id).order_by('-created_at').first()
-                order = event.picture.order + 1
-                if order >= len(pictures):
+                try:
+                    event = EventsLog.objects(frame=frame.id,library=library.id).order_by('-created_at').first()
+                    order = event.picture.order + 1
+                    if order >= len(pictures):
+                        picture =  pictures[0]
+                        image_read = pictures[0].file.read()
+                    else:
+                        picture =  pictures[order]
+                        image_read = pictures[order].file.read()
+                except:
+                    # Il n'y a jamais eu d'event...
                     picture =  pictures[0]
                     image_read = pictures[0].file.read()
-                else:
-                    picture =  pictures[order]
-                    image_read = pictures[order].file.read()
 
 
             if frame.type_frame == "e_paper_raspbery":
@@ -55,7 +60,7 @@ class Post_To_Frame(Resource):
                     ## Envoie de la requete au client/server
                     payload = {'key': frame.key}
                     file_picture = {"bmp": open(name_file,'rb')}
-                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=6)
+                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=8)
 
                     ## On envoie le log 
                     EventsLog(
@@ -91,7 +96,7 @@ class Post_To_Frame(Resource):
                         "filename": str(picture.id),
                         "token": os.getenv("AUTH").replace("Bearer ", "")
                     })
-                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=6)
+                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=8)
 
                     ## On envoie le log 
                     EventsLog(
@@ -157,7 +162,7 @@ class Post_To_Frame_ImageUser(Resource):
                     ## Envoie de la requete au client/server
                     payload = {'key': frame.key}
                     file_picture = {"bmp": open(name_file,'rb')}
-                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=6)
+                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=8)
 
                     ## On envoie le log 
                     EventsLog(
@@ -186,7 +191,7 @@ class Post_To_Frame_ImageUser(Resource):
                         "filename": str(picture.id),
                         "token": os.getenv("AUTH").replace("Bearer ", "")
                     })
-                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=6)
+                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=8)
 
                     ## On envoie le log 
                     EventsLog(
