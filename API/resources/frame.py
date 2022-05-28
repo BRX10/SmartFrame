@@ -122,35 +122,41 @@ class FrameAPI(Resource):
                     is_delete = True
                 ).save()
 
-            library_new = Librarys.objects.get(id=form.get("idLibrary"))
-            put_frame.update(library_display=library_new)
-
-            # On envoie le log 
-            EventsLog(
-                type_event = "user",
-                user = User.objects.get(id=get_jwt_identity()),
-                frame = put_frame,
-                library = library_new,
-                is_delete = False
-            ).save()
 
             cron = CronTab(user='root')
             # Suppresion du cron si il existe
             for job in cron:
                 if job.comment == id:
                     cron.remove(job)
-
-            # Ajout du cron
-            job = cron.new(command='python3 /API/resources/cron_post_to_frame.py '+id+' '+form.get("idLibrary")+' '+os.getenv("AUTH"), comment=id)
-            job.minute.every(int(library_new.delay))
             cron.write()
 
-            # Actualisation du frame
-            headers = {
-                'Authorization': os.getenv("AUTH")
-            }
-            payload = {'frame': id, 'library': form.get("idLibrary") }
-            requests.post('http://127.0.0.1:8080/api/eventtoframe', headers=headers, data=payload).json()
+
+            if form.get("idLibrary") == "disable_library_frame":
+                put_frame.update(unset__library_display=True)
+            else:
+                library_new = Librarys.objects.get(id=form.get("idLibrary"))
+                put_frame.update(library_display=library_new)
+
+                # On envoie le log 
+                EventsLog(
+                    type_event = "user",
+                    user = User.objects.get(id=get_jwt_identity()),
+                    frame = put_frame,
+                    library = library_new,
+                    is_delete = False
+                ).save()
+
+                # Ajout du cron
+                job = cron.new(command='python3 /API/resources/cron_post_to_frame.py '+id+' '+form.get("idLibrary")+' '+os.getenv("AUTH"), comment=id)
+                job.minute.every(int(library_new.delay))
+                cron.write()
+
+                # Actualisation du frame
+                headers = {
+                    'Authorization': os.getenv("AUTH")
+                }
+                payload = {'frame': id, 'library': form.get("idLibrary") }
+                requests.post('http://127.0.0.1:8080/api/eventtoframe', headers=headers, data=payload).json()
             
 
             return {'success': True}, 200
@@ -191,6 +197,7 @@ class FrameAPI(Resource):
                 for job in cron:
                     if job.comment == id:
                         cron.remove(job)
+                cron.write()
 
                 # On envoie le log 
                 EventsLog(

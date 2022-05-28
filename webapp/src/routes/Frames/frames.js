@@ -37,6 +37,7 @@ export default function Frames() {
         GetAllLibrarys()
             .then(librarys => {
                     setLibrarys(librarys);
+                    librarys.push({title: "Désactiver la bibliothéque sur le frame", id: "disable_library_frame"});
                     
                     if (params.idFrame) {
                         openModal(params.idFrame)
