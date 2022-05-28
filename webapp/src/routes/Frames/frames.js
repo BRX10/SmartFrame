@@ -37,7 +37,9 @@ export default function Frames() {
     const [typeAlertModal, setTypeAlertModal] = useState("");
     const [messageAlertModal, setMessageAlertModal] = useState("");
     const [isLoadedModal, setIsLoadedModal] = useState(false);
-
+    const [isLoadedSendModal, setIsLoadedSendModal] = useState(true);
+    
+    
     useEffect(() => {
         GetAllFrames()
             .then(frames => {
@@ -94,21 +96,27 @@ export default function Frames() {
     
     function changeSelectedLibrary(idFrame, selectdLibrary) {
         setSelected(selectdLibrary);
+        setIsLoadedSendModal(false);
+        setAlertModal(false);
 
         ChangeFrameLibraryDisplay(idFrame, selectdLibrary.id)
             .then((_) => {
                 setAlertModal(true);
                 setTypeAlertModal("sucess");
                 setMessageAlertModal("La bibliothéque a bien été changé");
+                setIsLoadedSendModal(true);
             },
             (error) => {
                 setAlertModal(true)
                 setTypeAlertModal("error")
                 setMessageAlertModal("Il y a eu une erreur lors du changement de la bibliothéque : " + error.message)
+                setIsLoadedSendModal(true);
             });
     }
     
     function archiveFrame (id) {
+        setAlertModal(false);
+        
         DeleteFrame(id)
             .then((_) => {
                 setAlertModal(true);
@@ -148,6 +156,10 @@ export default function Frames() {
                         messageAlert={messageAlertModal}
                         onClose={ (e) => setAlertModal(e) }
                     />
+
+                    { !isLoadedSendModal ? (
+                        <Spinner className="mt-1 mb-5"/>
+                    ) : null}
 
                     { !isLoadedModal ? (
                         <Spinner className="mt-6"/>
