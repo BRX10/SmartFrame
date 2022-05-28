@@ -17,11 +17,7 @@ class New_FrameAPI(Resource):
             # Récupération des élements du posts
             form = request.form
 
-            payload = {'key': form.get("key"),'config': True}
-            response_json = requests.post("http://"+form.get("ip")+"/config", data=payload).json()
-
-            if response_json.get("success"):
-                new_frame = Frames(
+            new_frame = Frames(
                     name = form.get("name"),
                     ip = form.get("ip"),
                     inch = form.get("inch"),
@@ -32,9 +28,20 @@ class New_FrameAPI(Resource):
                     orientation = form.get("orientation")
                 )
 
-                # On envoie la frame
-                new_frame.save()
+            # On envoie la frame
+            new_frame.save()
 
+            payload = {
+                'key': form.get("key"), 
+                'config': True, 
+                'frame': str(new_frame.id),
+                'token': os.getenv("AUTH").replace("Bearer ", ""),
+                'host': os.getenv("HOST_SERVER")
+            }
+            response_json = requests.post("http://"+form.get("ip")+"/config", data=payload).json()
+
+            if response_json.get("success"):
+                
                 # On envoie le log 
                 EventsLog(
                     type_event = "user",
@@ -45,6 +52,10 @@ class New_FrameAPI(Resource):
                 # On return l'id
                 return {'result': str(new_frame.id)}, 200
             else:
+
+                # On supprime le frame précédement créé
+                new_frame.delete()
+
                 return {'message': response_json.get("message"), 'status': 400}, 400
 
         except (FieldDoesNotExist, ValidationError):
