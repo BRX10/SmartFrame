@@ -21,6 +21,8 @@ export async function GetAllPictureLibrary(idLibrary) {
             id: item._id.$oid,
             picture: URL.createObjectURL(await GetPictureFile(item._id.$oid)),
             title: item.name,
+            fileName: item.file_name,
+            order: item.order,
             subTitle: "Ordre : " + item.order + " - " + item.file_name,
             date: moment.utc(item.created_at).tz("Europe/Paris").fromNow()
         }
@@ -61,4 +63,31 @@ export async function GetPictureFile(idPicture) {
     });
 
     return await response.blob();
+}
+
+export async function GetPictureFileToFrame(idPicture, width, height) {
+    const response = await fetch("/api/picturefileframe/"+width+"/"+height+"/"+idPicture, {
+        method: 'GET',
+        headers: new Headers({
+            'Authorization':  REACT_APP_AUTH,
+        }),
+        redirect: 'follow'
+    });
+
+    return await response.blob();
+}
+
+
+export async function DeletePicture(idPicture) {
+    const response = await fetch("/api/picture/"+idPicture, {
+        method: 'DELETE',
+        headers: new Headers({
+            'Authorization':  REACT_APP_AUTH,
+        })
+    });
+
+    let responseJson = await response.json();
+    if (responseJson.message) throw responseJson;
+
+    return responseJson;
 }

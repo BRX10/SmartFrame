@@ -26,9 +26,10 @@ export default function PostImage(props) {
                     </>
                 ))}
 
-                { props.href ? (
+                { props.isClick ? (
                     <a
-                        href={props.href}
+                        href="#"
+                        onClick={ () => props.onClick()}
                         className={classNames(
                             'absolute inset-0 rounded-md',
                             'ring-blue-400 focus:z-10 focus:outline-none focus:ring-2'

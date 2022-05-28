@@ -5,16 +5,27 @@ import Alert from "../../components/alert";
 import Input from "../../components/input";
 import PostImage from "../../components/postImage";
 import {
-    ConvertKeyToStringAction,
     DeleteLibrary,
     GetLibrary,
     ListAction,
     PutLibrary
 } from "../../services/librarysServices";
-import { GetAllPictureLibrary } from "../../services/picturesServices";
+import {
+    DeletePicture,
+    GetAllPictureLibrary,
+    GetPictureFile,
+    GetPictureFileToFrame
+} from "../../services/picturesServices";
 import Spinner from "../../components/spinner";
 import Title from "../../components/title";
 import Select from "../../components/select";
+import {Dialog} from "@headlessui/react";
+import {
+    EventToFrameUser,
+    GetAllFrames
+} from "../../services/framesServices";
+import ButtonSimple from "../../components/buttonSimple";
+import Modal from "../../components/modal";
 
 export default function Library() {
 
@@ -26,11 +37,25 @@ export default function Library() {
     const [library, setLibrary] = useState("");
     const [delay, setDelay] = useState("");
     const [action, setAction] = useState( "");
+    const [isArchive, setIsArchive] = useState(true);
     
     const [alert, setAlert] = useState(false);
     const [typeAlert, setTypeAlert] = useState("");
     const [messageAlert, setMessageAlert] = useState("");
     const [isLoaded, setIsLoaded] = useState(false);
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [pictureModal, setPictureModal] = useState({});
+    const [alertModal, setAlertModal] = useState(false);
+    const [typeAlertModal, setTypeAlertModal] = useState("");
+    const [messageAlertModal, setMessageAlertModal] = useState("");
+    const [isLoadedModal, setIsLoadedModal] = useState(false);
+    const [isLoadedSendModal, setIsLoadedSendModal] = useState(true);
+    const [pictureToFrameShow, setPictureToFrameShow] = useState(null);
+    const [isLoadedPctToFrame, setIsLoadedPctToFrame] = useState(true);
+    const [frames, setFrames] = useState([]);
+    const [selectedFrame, setSelectedFrame] = useState({ title: "Sélectionner le cadre"});
+    
 
     function classNames(...classes) {
         return classes.filter(Boolean).join(' ')
@@ -62,7 +87,7 @@ export default function Library() {
                 setMessageAlert("Il y a eu un problème lors de la récupération des images, erreur : " + error.message);
                 setIsLoaded(true);
             });
-    }, [params]);
+    }, [params, isArchive]);
 
 
     function archiveLibrary () {
@@ -106,6 +131,101 @@ export default function Library() {
             })
     }
 
+
+    function openModal(id) {
+        setIsOpen(true);
+        setIsLoadedModal(false);
+        setPictureModal(pictures.find(picture => picture.id === id));
+
+        GetAllFrames()
+            .then(frames => {
+                    setIsLoadedModal(true);
+                    setFrames(frames);
+                },
+                (_) => {
+                    setIsLoadedModal(true);
+                });
+    }
+
+    function closeModal() {
+        setIsOpen(false);
+
+        setTimeout(function() {
+            setAlertModal(false);
+            setPictureModal({});
+            setSelectedFrame({ title: "Sélectionner le cadre"});
+            setIsLoadedModal(false);
+            setPictureToFrameShow(null);
+        }, 200);
+    }
+    
+    function changeSelectedFrame(select) {
+        setSelectedFrame(select);
+        setIsLoadedPctToFrame(false);
+        setAlertModal(false);
+
+        GetPictureFileToFrame(pictureModal.id, select.width, select.height)
+            .then(pictureToFrame => {
+                    setIsLoadedPctToFrame(true);
+                    setPictureToFrameShow(URL.createObjectURL(pictureToFrame));
+                },
+                (_) => {
+                    setIsLoadedPctToFrame(true);
+                });
+        
+    }
+
+    function eventToFrame() {
+        setIsLoadedSendModal(false);
+        setAlertModal(false);
+        
+        if (selectedFrame.title === "Sélectionner le cadre") {
+            setAlertModal(true)
+            setTypeAlertModal("error")
+            setMessageAlertModal("Aucun cadre sélectionné");
+            setIsLoadedSendModal(true);
+            return;
+        }
+
+        EventToFrameUser(selectedFrame.id, pictureModal.id)
+            .then((_) => {
+                    setAlertModal(true);
+                    setTypeAlertModal("sucess");
+                    setMessageAlertModal("L'image a bien été changé");
+                    setIsLoadedSendModal(true);
+                },
+                (error) => {
+                    setAlertModal(true)
+                    setTypeAlertModal("error")
+                    setMessageAlertModal("Il y a eu une erreur lors du changement de l'image : " + error.message)
+                    setIsLoadedSendModal(true);
+                });
+        
+    }
+
+    function archivePicture (id) {
+        setAlertModal(false);
+
+        DeletePicture(id)
+            .then((_) => {
+                    setAlertModal(true);
+                    setTypeAlertModal("sucess");
+                    setMessageAlertModal("L'image a bien été archivé");
+                    setIsArchive(!isArchive);
+
+                    setTimeout(function() {
+                        setIsOpen(false);
+                        setPictureModal([]);
+                        setAlertModal(false);
+                    }, 1000);
+                },
+                (error) => {
+                    setAlertModal(true);
+                    setTypeAlertModal("error");
+                    setMessageAlertModal("Il y a eu une erreur : " + error.message);
+                })
+    }
+
     if (!isLoaded) {
         return <Spinner className="mt-40"/>;
     } else {
@@ -127,6 +247,97 @@ export default function Library() {
                         'p-3 ring-white ring-opacity-60 ring-offset-2 ring-offset-orange-400 focus:outline-none focus:ring-2',
                         'dark:bg-gray-900 dark:border-gray-600'
                     )}>
+
+                        <Modal
+                            isOpen={isOpen}
+                            setIsOpen={closeModal}
+                        >
+                            <Alert
+                                className="mb-8"
+                                alert={alertModal}
+                                typeAlert={typeAlertModal}
+                                messageAlert={messageAlertModal}
+                                onClose={ (e) => setAlertModal(e) }
+                            />
+
+                            { !isLoadedSendModal ? (
+                                <Spinner className="mt-1 mb-5"/>
+                            ) : null}
+
+                            { !isLoadedModal ? (
+                                <Spinner className="mt-6"/>
+                            ) : (
+                                <>
+                                    <Dialog.Title
+                                        as="h3"
+                                        className="flex justify-between items-center mt-2"
+                                    >
+                                        <Title
+                                            title={pictureModal.title}/>
+
+                                        <ButtonNavigation
+                                            title="Archiver"
+                                            onClick={() => archivePicture(pictureModal.id)}/>
+                                    </Dialog.Title>
+                                    <div className="mt-9 mb-3">
+                                        
+                                        <Input
+                                            title="Ordre"
+                                            name="delay"
+                                            type="number"
+                                            value={pictureModal.order}
+                                            disabled={true}/>
+
+                                        <img
+                                            className="mt-3"
+                                            style={{height: "15rem"}}
+                                            src={pictureModal.picture}
+                                            alt={pictureModal.fileName}/>
+
+                                        <Select
+                                            className="mt-5"
+                                            list={frames}
+                                            selected={selectedFrame}
+                                            setSelected={ (select) => changeSelectedFrame(select) } />
+
+                                        { pictureToFrameShow || !isLoadedPctToFrame ? (
+                                            <>
+                                                { !isLoadedPctToFrame ? (
+                                                    <Spinner className="mt-10 mb-5"/>
+                                                ) : null }
+                                                
+                                                <img
+                                                    hidden={!isLoadedPctToFrame}
+                                                    className="mt-3"
+                                                    style={{height: "15rem"}}
+                                                    src={pictureToFrameShow}
+                                                    alt="pictureToFrameShow" />
+                                            </>
+                                        ) : null}
+                                        
+                                    </div>
+
+                                    <div
+                                        className="flex justify-between items-center">
+                                        <ButtonSimple
+                                            type="button"
+                                            title="Je l'ai Merci!"
+                                            className="mt-3"
+                                            onClick={closeModal} />
+
+                                        { pictureToFrameShow ? (
+                                            <ButtonSimple
+                                                type="button"
+                                                title="Envoyer l'image sur le cadre"
+                                                className="mt-3"
+                                                onClick={eventToFrame} />
+                                        ) : null}
+                                    </div>
+                                </>
+                            )}
+                        </Modal>
+                        
+                        
                         <Alert
                             className="mt-4"
                             alert={alert}
@@ -191,7 +402,9 @@ export default function Library() {
                                                 list={[
                                                     post.date,
                                                     post.subTitle
-                                                ]}/>
+                                                ]}
+                                                isClick={true}
+                                                onClick={ () => openModal(post.id) }/>
                                         ))}
                                     </ul>
                                 </div>

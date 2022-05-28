@@ -20,7 +20,9 @@ export async function GetAllFrames() {
             id: frame._id.$oid,
             title: frame.name,
             subTitle: frame.inch + '" - ' + frame.resolution_width + "x"+ frame.resolution_height + " - " + frame.ip,
-            date: moment.utc(frame.created_at).tz("Europe/Paris").fromNow()
+            date: moment.utc(frame.created_at).tz("Europe/Paris").fromNow(),
+            width: frame.resolution_width,
+            height: frame.resolution_height
         }
     })
 }
@@ -122,6 +124,24 @@ export async function EventToFrame(idFrame, idLibrary) {
 }
 
 
+export async function EventToFrameUser(idFrame, idPicture) {
+    let formdata = new FormData();
+    formdata.append("frame", idFrame);
+    formdata.append("picture", idPicture);
+
+    const response = await fetch("/api/eventtoframeuser", {
+        method: 'POST',
+        headers: new Headers({
+            'Authorization':  REACT_APP_AUTH,
+        }),
+        body: formdata
+    });
+
+    let responseJson = await response.json();
+    if (responseJson.message) throw responseJson;
+
+    return responseJson;
+}
 
 
 export const ListOrientation = [{

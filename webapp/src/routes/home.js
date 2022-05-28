@@ -189,6 +189,15 @@ export default function Home() {
                                                                         moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
                                                                         post.frame.ip
                                                                     ]} />
+                                                            ) : post.picture && post.frame && !post.is_delete ? (
+                                                                <Post
+                                                                    isClick={false}
+                                                                    key={idxPost}
+                                                                    title={ post.user.username +" a envoyé l'image " + post.picture.name + " sur le cadre "+ post.frame.name}
+                                                                    list={[
+                                                                        moment.utc(post.created_at).tz("Europe/Paris").fromNow(),
+                                                                        post.frame.ip
+                                                                    ]} />
                                                             ) : null }
                                                         </>
                                                     ) : post.type_event === "server" ? (
