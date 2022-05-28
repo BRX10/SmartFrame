@@ -1,5 +1,5 @@
-import {useCallback} from 'react'
-import {useDropzone} from 'react-dropzone'
+//import {useCallback} from 'react'
+//import {useDropzone} from 'react-dropzone'
 
 export default function DropzoneImage(props) {
     /*const onDrop = useCallback(acceptedFiles => {

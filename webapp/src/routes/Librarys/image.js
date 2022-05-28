@@ -1,19 +1,9 @@
-import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ButtonNavigation from "../../components/buttonNavigation";
 import Alert from "../../components/alert";
 import Input from "../../components/input";
-import PostImage from "../../components/postImage";
-import {
-    DeleteLibrary,
-    GetLibrary,
-    ListAction,
-    PutLibrary
-} from "../../services/librarysServices";
 import {
     DeletePicture,
-    GetAllPictureLibrary,
-    GetPictureFile,
     GetPictureFileToFrame
 } from "../../services/picturesServices";
 import Spinner from "../../components/spinner";
@@ -29,7 +19,6 @@ import Modal from "../../components/modal";
 
 export default function Image(props) {
     
-    
     const [alertModal, setAlertModal] = useState(false);
     const [typeAlertModal, setTypeAlertModal] = useState("");
     const [messageAlertModal, setMessageAlertModal] = useState("");
@@ -39,12 +28,8 @@ export default function Image(props) {
     const [isLoadedPctToFrame, setIsLoadedPctToFrame] = useState(true);
     const [frames, setFrames] = useState([]);
     const [selectedFrame, setSelectedFrame] = useState({ title: "Sélectionner le cadre"});
-
-
-    function classNames(...classes) {
-        return classes.filter(Boolean).join(' ')
-    }
-
+    
+    
     useEffect(() => {
         GetAllFrames()
             .then(frames => {

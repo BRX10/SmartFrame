@@ -48,7 +48,7 @@ export default function Frame(props) {
                     });
         }
         
-    }, [props.librarys, props.isOpen]);
+    }, [props.librarys, props.isOpen, props.id]);
 
 
     function closeModal() {
@@ -117,7 +117,7 @@ export default function Frame(props) {
                     setIsLoadedSendModal(true);
 
                     setTimeout(function() {
-                        props.setIsOpen(false);
+                        props.closeModal();
                         setFrameModal([]);
                         setAlertModal(false);
                     }, 1000);
