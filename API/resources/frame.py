@@ -128,7 +128,6 @@ class FrameAPI(Resource):
             for job in cron:
                 if job.comment == id:
                     cron.remove(job)
-            cron.write()
 
 
             if form.get("idLibrary") == "disable_library_frame":
@@ -149,7 +148,6 @@ class FrameAPI(Resource):
                 # Ajout du cron
                 job = cron.new(command='python3 /API/resources/cron_post_to_frame.py '+id+' '+form.get("idLibrary")+' '+os.getenv("AUTH"), comment=id)
                 job.minute.every(int(library_new.delay))
-                cron.write()
 
                 # Actualisation du frame
                 headers = {
@@ -158,6 +156,7 @@ class FrameAPI(Resource):
                 payload = {'frame': id, 'library': form.get("idLibrary") }
                 requests.post('http://127.0.0.1:8080/api/eventtoframe', headers=headers, data=payload).json()
             
+            cron.write()
 
             return {'success': True}, 200
 
