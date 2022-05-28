@@ -102,6 +102,24 @@ export async function ChangeFrameLibraryDisplay(idFrame, idLibrary) {
     return responseJson;
 }
 
+export async function EventToFrame(idFrame, idLibrary) {
+    let formdata = new FormData();
+    formdata.append("frame", idFrame);
+    formdata.append("library", idLibrary);
+
+    const response = await fetch("/api/eventtoframe", {
+        method: 'POST',
+        headers: new Headers({
+            'Authorization':  REACT_APP_AUTH,
+        }),
+        body: formdata
+    });
+
+    let responseJson = await response.json();
+    if (responseJson.message) throw responseJson;
+
+    return responseJson;
+}
 
 
 

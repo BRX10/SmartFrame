@@ -4,8 +4,10 @@ import Table from "../../components/table";
 import ButtonNavigation from "../../components/buttonNavigation";
 import {
     ChangeFrameLibraryDisplay,
-    ConvertKeyToStringOrientation, ConvertKeyToStringType,
-    DeleteFrame,
+    ConvertKeyToStringOrientation, 
+    ConvertKeyToStringType,
+    DeleteFrame, 
+    EventToFrame,
     GetAllFrames,
     GetFrame
 } from "../../services/framesServices";
@@ -72,7 +74,7 @@ export default function Frames() {
                 setIsLoadedModal(true);
                 
                 if (frame.library_display) {
-                    setSelected({title: frame.library_display.name});
+                    setSelected(librarys.find(library => library.id === frame.library_display._id.$oid));
                 }
             },
             (error) => {
@@ -112,6 +114,25 @@ export default function Frames() {
                 setMessageAlertModal("Il y a eu une erreur lors du changement de la bibliothéque : " + error.message)
                 setIsLoadedSendModal(true);
             });
+    }
+
+    function eventToFrame() {
+        setIsLoadedSendModal(false);
+        setAlertModal(false);
+        
+        EventToFrame(frameModal._id.$oid, selected.id)
+            .then((_) => {
+                    setAlertModal(true);
+                    setTypeAlertModal("sucess");
+                    setMessageAlertModal("L'image a bien été changé");
+                    setIsLoadedSendModal(true);
+                },
+                (error) => {
+                    setAlertModal(true)
+                    setTypeAlertModal("error")
+                    setMessageAlertModal("Il y a eu une erreur lors du changement de l'image : " + error.message)
+                    setIsLoadedSendModal(true);
+                });
     }
     
     function archiveFrame (id) {
@@ -219,12 +240,20 @@ export default function Frames() {
 
                             </div>
 
+                            <div
+                                className="flex justify-between items-center">
+                                <ButtonSimple
+                                    type="button"
+                                    title="Je l'ai Merci!"
+                                    className="mt-3"
+                                    onClick={closeModal} />
 
-                            <ButtonSimple
-                                type="button"
-                                title="Je l'ai Merci!"
-                                className="mt-3"
-                                onClick={closeModal} />
+                                <ButtonSimple
+                                    type="button"
+                                    title="Actualiser l'image!"
+                                    className="mt-3"
+                                    onClick={eventToFrame} />
+                            </div>
                         </>
                     )}
                 </Modal>
