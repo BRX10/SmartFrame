@@ -60,7 +60,7 @@ class Post_To_Frame(Resource):
                     ## Envoie de la requete au client/server
                     payload = {'key': frame.key}
                     file_picture = {"bmp": open(name_file,'rb')}
-                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=8)
+                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=10)
 
                     ## On envoie le log 
                     EventsLog(
@@ -96,7 +96,7 @@ class Post_To_Frame(Resource):
                         "filename": str(picture.id),
                         "token": os.getenv("AUTH").replace("Bearer ", "")
                     })
-                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=30)
+                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=10)
 
                     ## On envoie le log 
                     EventsLog(
@@ -162,7 +162,7 @@ class Post_To_Frame_ImageUser(Resource):
                     ## Envoie de la requete au client/server
                     payload = {'key': frame.key}
                     file_picture = {"bmp": open(name_file,'rb')}
-                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=8)
+                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=10)
 
                     ## On envoie le log 
                     EventsLog(
@@ -192,7 +192,7 @@ class Post_To_Frame_ImageUser(Resource):
                         "filename": str(picture.id),
                         "token": os.getenv("AUTH").replace("Bearer ", "")
                     })
-                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=8)
+                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=10)
 
                     ## On envoie le log 
                     EventsLog(
