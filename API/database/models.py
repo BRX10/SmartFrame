@@ -39,6 +39,7 @@ class Librarys(db.Document):
     name = db.StringField(required=True)
     delay = db.DecimalField(required=True)
     is_active = db.BooleanField(required=True, default=True)
+    action = db.StringField(required=True)
     
 
 class Pictures(db.Document):

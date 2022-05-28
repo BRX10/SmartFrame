@@ -4,10 +4,17 @@ import ButtonNavigation from "../../components/buttonNavigation";
 import Alert from "../../components/alert";
 import Input from "../../components/input";
 import PostImage from "../../components/postImage";
-import {DeleteLibrary, GetLibrary} from "../../services/librarysServices";
+import {
+    ConvertKeyToStringAction,
+    DeleteLibrary,
+    GetLibrary,
+    ListAction,
+    PutLibrary
+} from "../../services/librarysServices";
 import { GetAllPictureLibrary } from "../../services/picturesServices";
 import Spinner from "../../components/spinner";
 import Title from "../../components/title";
+import Select from "../../components/select";
 
 export default function Library() {
 
@@ -18,6 +25,7 @@ export default function Library() {
     
     const [library, setLibrary] = useState("");
     const [delay, setDelay] = useState("");
+    const [action, setAction] = useState( "");
     
     const [alert, setAlert] = useState(false);
     const [typeAlert, setTypeAlert] = useState("");
@@ -33,6 +41,7 @@ export default function Library() {
             .then((library) => {
                 setLibrary(library.name);
                 setDelay(library.delay);
+                setAction(ListAction.find(action => action.value === library.action));
                 setIsLoaded(true);
             },
             (error) => {
@@ -57,6 +66,8 @@ export default function Library() {
 
 
     function archiveLibrary () {
+        setAlert(false);
+        
         DeleteLibrary(params.idLibrary)
             .then((_) => {
                 setAlert(true);
@@ -66,6 +77,27 @@ export default function Library() {
                 setTimeout(function() {
                     navigate("/librarys", { replace: true });
                 }, 800);
+            },
+            (error) => {
+                setAlert(true)
+                setTypeAlert("error")
+                setMessageAlert("Il y a eu une erreur : " + error.message)
+            })
+    }
+    
+    function changeLibrary (selectAction) {
+        setAlert(false);
+        setAction(selectAction);
+        
+        PutLibrary(params.idLibrary, null, null, selectAction.value)
+            .then((library) => {
+                setLibrary(library.name);
+                setDelay(library.delay);
+                setAction(ListAction.find(action => action.value === library.action));
+                
+                setAlert(true);
+                setTypeAlert("sucess");
+                setMessageAlert("La bibliothéque a bien été mis ajour");
             },
             (error) => {
                 setAlert(true)
@@ -122,6 +154,12 @@ export default function Library() {
                                 required={true}
                                 disabled={true}
                                 onChange={(e) => setDelay(e)}/>
+
+                            <Select
+                                className="mt-2"
+                                list={ListAction}
+                                selected={action}
+                                setSelected={ (select) => changeLibrary(select)}/>
                         </form>
                         
                         <Title

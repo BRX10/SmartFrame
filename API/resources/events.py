@@ -25,10 +25,26 @@ class Post_To_Frame(Resource):
             library = Librarys.objects.get(id=form.get("library"))
             pictures = Pictures.objects(library=form.get("library"),is_active=True).order_by('order')
             
-            ## Génération d'un nombre aléatoire
-            random_picture = random.randint(0,len(pictures)-1)
-            picture =  pictures[random_picture]
-            image_read = pictures[random_picture].file.read()
+            picture = ""
+            image_read = ""
+
+            if library.action == "random":
+                ## Génération d'un nombre aléatoire
+                random_picture = random.randint(0,len(pictures)-1)
+                picture =  pictures[random_picture]
+                image_read = pictures[random_picture].file.read()
+
+            elif library.action == "order":
+                ## Récupération du dernier event pour en déterminer la derniere image de la library donc le chiffre de l'ordre
+                event = EventsLog.objects(frame=frame.id,library=library.id).order_by('-created_at').first()
+                order = event.picture.order + 1
+                if order >= len(pictures):
+                    picture =  pictures[0]
+                    image_read = pictures[0].file.read()
+                else:
+                    picture =  pictures[order]
+                    image_read = pictures[order].file.read()
+
 
             if frame.type_frame == "e_paper_raspbery":
                 name_file = "tmp/" +slugify("tmp_" + frame.name + "_" + library.name + "_" + picture.name) + ".bmp"

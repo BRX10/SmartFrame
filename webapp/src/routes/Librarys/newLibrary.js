@@ -4,7 +4,8 @@ import ButtonNavigation from "../../components/buttonNavigation";
 import Alert from "../../components/alert";
 import Input from "../../components/input";
 import Button from "../../components/button";
-import { PostLibrary } from "../../services/librarysServices";
+import {ListAction, PostLibrary} from "../../services/librarysServices";
+import Select from "../../components/select";
 
 export default function NewLibrary() {
 
@@ -12,6 +13,7 @@ export default function NewLibrary() {
 
     const [library, setLibrary] = useState("");
     const [delay, setDelay] = useState("");
+    const [action, setAction] = useState( {title: "Ajouter le mode d'action"});
 
     const [alert, setAlert] = useState(false);
     const [typeAlert, setTypeAlert] = useState("");
@@ -24,7 +26,7 @@ export default function NewLibrary() {
     function handleSubmit (event) {
         event.preventDefault();
 
-        PostLibrary(library, delay)
+        PostLibrary(library, delay, action.value)
             .then((library) => {
                 setAlert(true)
                 setTypeAlert("sucess")
@@ -81,6 +83,12 @@ export default function NewLibrary() {
                             value={delay}
                             required={true}
                             onChange={(e) => setDelay(e)}/>
+
+                        <Select
+                            className="mt-2"
+                            list={ListAction}
+                            selected={action}
+                            setSelected={ (select) => setAction(select)}/>
                         
                         <Button
                             title="Enregister"

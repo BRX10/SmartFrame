@@ -15,7 +15,8 @@ class New_LibraryAPI(Resource):
 
             new_library = Librarys(
                 name = form.get("name"),
-                delay = form.get("delay")
+                delay = form.get("delay"),
+                action = form.get("action")
             )
 
             # On envoie la frame
@@ -55,6 +56,42 @@ class LibraryAPI(Resource):
             librarys = Librarys.objects.get(id=id).to_json()
 
             return Response(librarys, mimetype="application/json", status=200)
+
+        except (FieldDoesNotExist, ValidationError):
+            raise SchemaValidationError
+
+        except KeyError:
+            raise SchemaValidationError
+
+        except SchemaValidationError:
+            raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
+
+        except Exception as e:
+            print(e)
+            raise InternalServerError
+
+    @jwt_required()
+    def put(self, id):
+        try:
+            form = request.form
+            library = Librarys.objects.get(id=id)
+
+            if form.get("library"):
+                library.update(name=form.get("library"))
+
+            if form.get("delay"):
+                library.update(delay=form.get("delay"))
+
+            if form.get("action"):
+                library.update(action=form.get("action"))
+
+            library = Librarys.objects.get(id=id).to_json()
+            
+
+            return Response(library, mimetype="application/json", status=200)
 
         except (FieldDoesNotExist, ValidationError):
             raise SchemaValidationError
