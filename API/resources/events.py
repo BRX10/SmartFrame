@@ -96,7 +96,7 @@ class Post_To_Frame(Resource):
                         "filename": str(picture.id),
                         "token": os.getenv("AUTH").replace("Bearer ", "")
                     })
-                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=8)
+                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=30)
 
                     ## On envoie le log 
                     EventsLog(
