@@ -3,7 +3,7 @@ from resources.frame import New_FrameAPI, FrameAPI, FramesAPI
 from resources.library import New_LibraryAPI, LibraryAPI, LibrarysAPI
 from resources.picture import PictureAPI, PicturesAPI, PictureFileAPI, PictureFileFrameAPI
 from resources.eventsLog import EventsLogAPI
-from resources.eventsArduinoLog import EventsArduinoLogAPI
+from resources.eventsArduinoLog import EventsArduinoLogAPI, EventsArduinoLogPaginateAPI
 from resources.events import Post_To_Frame, Post_To_Frame_ImageUser
 
 
@@ -12,6 +12,8 @@ def initialize_routes(api, app):
     api.add_resource(Post_To_Frame, '/api/eventtoframe')
     api.add_resource(Post_To_Frame_ImageUser, '/api/eventtoframeuser')
 
+
+    api.add_resource(EventsArduinoLogPaginateAPI, '/api/eventsarduinologpaginateapi')
     api.add_resource(EventsArduinoLogAPI, '/api/eventsarduinolog')
     api.add_resource(EventsLogAPI, '/api/eventslog')
 

@@ -75,6 +75,19 @@ export default function MenuDropDown() {
                                             )}
                                         </Menu.Item>
                                     </div>
+
+                                    <div className="py-1">
+                                        <Menu.Item>
+                                            {({ active }) => (
+                                                <a
+                                                    href="/arduinologs"
+                                                    className={`${ active ? "bg-orange-100 text-orange-900 dark:bg-gray-900 dark:text-gray-600" : "text-orange-700 dark:text-gray-300" } flex justify-between w-full px-4 py-2 text-sm leading-5 text-left`}
+                                                >
+                                                    Logs Arduino
+                                                </a>
+                                            )}
+                                        </Menu.Item>
+                                    </div>
                                     
                                 </Menu.Items>
                             </Transition>

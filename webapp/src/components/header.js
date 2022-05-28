@@ -20,6 +20,8 @@ export default function Header() {
                 return "Nouvelle Bibliothéque"
             case "new_image":
                 return "Nouvelle Image"
+            case "arduinologs":
+                return "Logs Arduino"
             default:
                 return ""
         }
