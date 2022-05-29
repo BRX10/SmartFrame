@@ -12,9 +12,6 @@ COPY /nginx /webapp/nginx
 COPY /src /webapp/src
 COPY postcss.config.js tailwind.config.js /webapp/
 
-ARG REACT_APP_AUTH
-ENV REACT_APP_AUTH=$REACT_APP_AUTH
-
 RUN npm run build
 
 # stage 2 - build the final image and copy the react build files

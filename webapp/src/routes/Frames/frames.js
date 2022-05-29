@@ -8,8 +8,9 @@ import {
 import Spinner from "../../components/spinner";
 import { GetAllLibrarys } from "../../services/librarysServices";
 import Frame from "./frame";
+import PropTypes from "prop-types";
 
-export default function Frames() {
+export default function Frames({ token }) {
 
     const navigate = useNavigate();
     const params = useParams();
@@ -24,7 +25,7 @@ export default function Frames() {
     const [frameIdModal, setFrameIdModal] = useState(null);
     
     useEffect(() => {
-        GetAllFrames()
+        GetAllFrames(token)
             .then(frames => {
                     setIsLoaded(true);
                     setFrames(frames);
@@ -32,9 +33,15 @@ export default function Frames() {
                 (error) => {
                     setIsLoaded(true);
                     setError(error);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 });
 
-        GetAllLibrarys()
+        GetAllLibrarys(token)
             .then(librarys => {
                     setLibrarys(librarys);
                     librarys.push({title: "Désactiver la bibliothéque sur le frame", id: "disable_library_frame"});
@@ -45,8 +52,14 @@ export default function Frames() {
                 },
                 (error) => {
                     setError(error);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 });
-    }, [isArchive]);
+    }, [isArchive, token, params.idFrame, navigate]);
 
     
     function openModal(id) {
@@ -70,12 +83,12 @@ export default function Frames() {
         return (
             <>
                 <Frame
+                    token={token}
                     isOpen={isOpen}
                     closeModal={closeModal}
                     id={frameIdModal}
                     librarys={librarys}
-                    setIsArchive={setIsArchive}
-                    isArchive={setIsArchive}
+                    isArchive={() => setIsArchive(!isArchive)}
                 />
 
                 <Table 
@@ -91,4 +104,9 @@ export default function Frames() {
             </>
         );
     }
+}
+
+
+Frames.propTypes = {
+    token: PropTypes.string.isRequired
 }

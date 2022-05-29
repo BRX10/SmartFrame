@@ -10,27 +10,39 @@ import NewLibrary from "./routes/Librarys/newLibrary";
 import Library from "./routes/Librarys/library";
 import NewImage from "./routes/Librarys/newImage";
 import ArduinoLog from "./routes/ArduinoLog/arduinoLog";
+import Signin from "./routes/Authentication/signin";
+import Signout from "./routes/Authentication/signout";
+import useToken from "./services/useToken";
 
 export function App() {
+    
+    const { token, setToken, delToken } = useToken();
+
+    if(!token) {
+        return <Signin setToken={setToken} delToken={delToken} />
+    }
+    
     return (
         <>
-            <Header />
             <Routes>
-                <Route path="/" element={<Home />} />
-
-                <Route path="frames" element={ <Frames /> } />
-                <Route path="frames/:idFrame" element={ <Frames /> } />
-                <Route path="new_frame/" element={ <NewFrame /> } />
-
-                <Route path="librarys" element={ <Librarys /> } />
-                <Route path="new_library" element={<NewLibrary />} />
-                <Route path="library/:idLibrary" element={<Library />} />
-                <Route path="library/:idLibrary/:idPicture" element={<Library />} />
-                <Route path="new_image/:idLibrary/:order" element={<NewImage />} />
-
-                <Route path="arduinologs" element={<ArduinoLog />} />
-
                 <Route path="*" element={<NotFound />} />
+                <Route path="signout" element={<Signout token={token} delToken={delToken} />} />
+                
+                <Route element={<Header />}>
+                    <Route path="/" element={<Home token={token} />} />
+
+                    <Route path="frames" element={ <Frames token={token} /> } />
+                    <Route path="frames/:idFrame" element={ <Frames token={token} /> } />
+                    <Route path="new_frame/" element={ <NewFrame token={token} /> } />
+
+                    <Route path="librarys" element={ <Librarys token={token} /> } />
+                    <Route path="new_library" element={<NewLibrary token={token} />} />
+                    <Route path="library/:idLibrary" element={<Library token={token} />} />
+                    <Route path="library/:idLibrary/:idPicture" element={<Library token={token} />} />
+                    <Route path="new_image/:idLibrary/:order" element={<NewImage token={token} />} />
+
+                    <Route path="arduinologs" element={<ArduinoLog token={token} />} />
+                </Route>
             </Routes>
         </>
     );

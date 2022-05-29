@@ -46,8 +46,6 @@ services:
     build:
       context: ./webapp
       dockerfile: Dockerfile.prod
-      args:
-        REACT_APP_AUTH: ${TOKEN_API}
     image: smartframe/webapp
     container_name: 'SmartFrame-webapp'
     restart: always

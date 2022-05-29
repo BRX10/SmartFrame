@@ -16,9 +16,12 @@ import Title from "../../components/title";
 import ButtonSimple from "../../components/buttonSimple";
 import Select from "../../components/select";
 import Modal from "../../components/modal";
+import {useNavigate} from "react-router-dom";
 
 export default function Frame(props) {
 
+    const navigate = useNavigate();
+    
     const [selected, setSelected] = useState({ title: "Sélectionner la bibliothéque"});
     
     const [frameModal, setFrameModal] = useState({});
@@ -31,7 +34,7 @@ export default function Frame(props) {
 
     useEffect(() => {
         if (props.isOpen) {
-            GetFrame(props.id)
+            GetFrame(props.token, props.id)
                 .then(frame => {
                         setFrameModal(frame);
                         setIsLoadedModal(true);
@@ -45,10 +48,16 @@ export default function Frame(props) {
                         setTypeAlertModal("error");
                         setMessageAlertModal("Il y a eu un problème lors de la récupération du cadre, erreur : " + error.message);
                         setIsLoadedModal(true);
+
+                        setTimeout(function() {
+                            if (error.message === "Le token a expiré") {
+                                navigate("/signout", { replace: true });
+                            }
+                        }, 300);
                     });
         }
         
-    }, [props.librarys, props.isOpen, props.id]);
+    }, [props.librarys, props.isOpen, props.id, props.token, navigate]);
 
 
     function closeModal() {
@@ -68,7 +77,7 @@ export default function Frame(props) {
         setIsLoadedSendModal(false);
         setAlertModal(false);
 
-        ChangeFrameLibraryDisplay(idFrame, selectdLibrary.id)
+        ChangeFrameLibraryDisplay(props.token, idFrame, selectdLibrary.id)
             .then((_) => {
                     setAlertModal(true);
                     setTypeAlertModal("sucess");
@@ -80,6 +89,12 @@ export default function Frame(props) {
                     setTypeAlertModal("error")
                     setMessageAlertModal("Il y a eu une erreur lors du changement de la bibliothéque : " + error.message)
                     setIsLoadedSendModal(true);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 });
     }
 
@@ -88,7 +103,7 @@ export default function Frame(props) {
         setIsLoadedSendModal(false);
         setAlertModal(false);
 
-        EventToFrame(frameModal._id.$oid, selected.id)
+        EventToFrame(props.token, frameModal._id.$oid, selected.id)
             .then((_) => {
                     setAlertModal(true);
                     setTypeAlertModal("sucess");
@@ -100,6 +115,12 @@ export default function Frame(props) {
                     setTypeAlertModal("error")
                     setMessageAlertModal("Il y a eu une erreur lors du changement de l'image : " + error.message)
                     setIsLoadedSendModal(true);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 });
     }
 
@@ -108,12 +129,12 @@ export default function Frame(props) {
         setAlertModal(false);
         setIsLoadedSendModal(false);
 
-        DeleteFrame(id)
+        DeleteFrame(props.token, id)
             .then((_) => {
                     setAlertModal(true);
                     setTypeAlertModal("sucess");
                     setMessageAlertModal("Le cadre a bien été archivé");
-                    props.setIsArchive(!props.isArchive);
+                    props.isArchive();
                     setIsLoadedSendModal(true);
 
                     setTimeout(function() {
@@ -127,6 +148,12 @@ export default function Frame(props) {
                     setAlertModal(true);
                     setTypeAlertModal("error");
                     setMessageAlertModal("Il y a eu une erreur : " + error.message);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 })
     }
     

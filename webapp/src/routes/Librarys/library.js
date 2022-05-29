@@ -17,8 +17,9 @@ import Spinner from "../../components/spinner";
 import Title from "../../components/title";
 import Select from "../../components/select";
 import Image from "./image";
+import PropTypes from "prop-types";
 
-export default function Library() {
+export default function Library({ token }) {
 
     const navigate = useNavigate();
     const params = useParams();
@@ -44,7 +45,7 @@ export default function Library() {
     }
 
     useEffect(() => {
-        GetLibrary(params.idLibrary)
+        GetLibrary(token, params.idLibrary)
             .then((library) => {
                 setLibrary(library.name);
                 setDelay(library.delay);
@@ -56,15 +57,21 @@ export default function Library() {
                 setTypeAlert("error");
                 setMessageAlert("Il y a eu un problème lors de la récupération de la bibliothéque, erreur : " + error.message);
                 setIsLoaded(true);
+
+                setTimeout(function() {
+                    if (error.message === "Le token a expiré") {
+                        navigate("/signout", { replace: true });
+                    }
+                }, 300);
             });
 
-        GetAllPictureLibrary(params.idLibrary)
+        GetAllPictureLibrary(token, params.idLibrary)
             .then((pictures) => {
                 setPictures(pictures);
                 setIsLoaded(true);
 
                 if (params.idPicture) {
-                    openModal(params.idPicture, pictures)
+                    openModal(params.idPicture, pictures);
                 }
             }, 
             (error) => {
@@ -72,14 +79,20 @@ export default function Library() {
                 setTypeAlert("error");
                 setMessageAlert("Il y a eu un problème lors de la récupération des images, erreur : " + error.message);
                 setIsLoaded(true);
+
+                setTimeout(function() {
+                    if (error.message === "Le token a expiré") {
+                        navigate("/signout", { replace: true });
+                    }
+                }, 300);
             });
-    }, [params, isArchive]);
+    }, [params.idPicture, isArchive, token, navigate, params.idLibrary]);
 
 
     function archiveLibrary () {
         setAlert(false);
         
-        DeleteLibrary(params.idLibrary)
+        DeleteLibrary(token, params.idLibrary)
             .then((_) => {
                 setAlert(true);
                 setTypeAlert("sucess");
@@ -90,9 +103,15 @@ export default function Library() {
                 }, 800);
             },
             (error) => {
-                setAlert(true)
-                setTypeAlert("error")
-                setMessageAlert("Il y a eu une erreur : " + error.message)
+                setAlert(true);
+                setTypeAlert("error");
+                setMessageAlert("Il y a eu une erreur : " + error.message);
+
+                setTimeout(function() {
+                    if (error.message === "Le token a expiré") {
+                        navigate("/signout", { replace: true });
+                    }
+                }, 300);
             })
     }
     
@@ -100,7 +119,7 @@ export default function Library() {
         setAlert(false);
         setAction(selectAction);
         
-        PutLibrary(params.idLibrary, null, null, selectAction.value)
+        PutLibrary(token, params.idLibrary, null, null, selectAction.value)
             .then((library) => {
                 setLibrary(library.name);
                 setDelay(library.delay);
@@ -111,9 +130,15 @@ export default function Library() {
                 setMessageAlert("La bibliothéque a bien été mis ajour");
             },
             (error) => {
-                setAlert(true)
-                setTypeAlert("error")
-                setMessageAlert("Il y a eu une erreur : " + error.message)
+                setAlert(true);
+                setTypeAlert("error");
+                setMessageAlert("Il y a eu une erreur : " + error.message);
+
+                setTimeout(function() {
+                    if (error.message === "Le token a expiré") {
+                        navigate("/signout", { replace: true });
+                    }
+                }, 300);
             })
     }
 
@@ -155,11 +180,11 @@ export default function Library() {
                     )}>
 
                         <Image
+                            token={token}
                             isOpen={isOpen}
                             closeModal={closeModal}
                             pictureModal={pictureModal}
-                            setIsArchive={setIsArchive}
-                            isArchive={setIsArchive}
+                            isArchive={() => setIsArchive(!isArchive)}
                         />
                         
                         
@@ -240,4 +265,8 @@ export default function Library() {
             </div>
         )
     }
+}
+
+Library.propTypes = {
+    token: PropTypes.string.isRequired
 }

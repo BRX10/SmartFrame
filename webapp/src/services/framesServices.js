@@ -1,13 +1,11 @@
 import moment from "moment-timezone";
 import "moment/locale/fr";
 
-const { REACT_APP_AUTH } = process.env;
-
-export async function GetAllFrames() {
+export async function GetAllFrames(token) {
     const response = await fetch("/api/frames", {
         method: 'GET',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         redirect: 'follow'
     });
@@ -27,7 +25,7 @@ export async function GetAllFrames() {
     })
 }
 
-export async function PostFrame(name, ip, key, inch, resolution_width, resolution_height, orientation, type) {
+export async function PostFrame(token, name, ip, key, inch, resolution_width, resolution_height, orientation, type) {
     let formdata = new FormData();
     formdata.append("name", name);
     formdata.append("ip", ip);
@@ -41,7 +39,7 @@ export async function PostFrame(name, ip, key, inch, resolution_width, resolutio
     const response = await fetch("/api/frame", {
         method: 'POST',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization':  'Bearer ' + token,
         }),
         body: formdata
     });
@@ -55,11 +53,11 @@ export async function PostFrame(name, ip, key, inch, resolution_width, resolutio
 }
 
 
-export async function GetFrame(idFrame) {
+export async function GetFrame(token, idFrame) {
     const response = await fetch("/api/frame/"+idFrame, {
         method: 'GET',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         redirect: 'follow'
     });
@@ -71,11 +69,11 @@ export async function GetFrame(idFrame) {
 }
 
 
-export async function DeleteFrame(idFrame) {
+export async function DeleteFrame(token,  idFrame) {
     const response = await fetch("/api/frame/"+idFrame, {
         method: 'DELETE',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization':  'Bearer ' + token,
         })
     });
 
@@ -86,14 +84,14 @@ export async function DeleteFrame(idFrame) {
 }
 
 
-export async function ChangeFrameLibraryDisplay(idFrame, idLibrary) {
+export async function ChangeFrameLibraryDisplay(token, idFrame, idLibrary) {
     let formdata = new FormData();
     formdata.append("idLibrary", idLibrary);
     
     const response = await fetch("/api/frame/"+idFrame, {
         method: 'PUT',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization':  'Bearer ' + token,
         }),
         body: formdata
     });
@@ -104,7 +102,7 @@ export async function ChangeFrameLibraryDisplay(idFrame, idLibrary) {
     return responseJson;
 }
 
-export async function EventToFrame(idFrame, idLibrary) {
+export async function EventToFrame(token, idFrame, idLibrary) {
     let formdata = new FormData();
     formdata.append("frame", idFrame);
     formdata.append("library", idLibrary);
@@ -112,7 +110,7 @@ export async function EventToFrame(idFrame, idLibrary) {
     const response = await fetch("/api/eventtoframe", {
         method: 'POST',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization':  'Bearer ' + token,
         }),
         body: formdata
     });
@@ -124,7 +122,7 @@ export async function EventToFrame(idFrame, idLibrary) {
 }
 
 
-export async function EventToFrameUser(idFrame, idPicture) {
+export async function EventToFrameUser(token, idFrame, idPicture) {
     let formdata = new FormData();
     formdata.append("frame", idFrame);
     formdata.append("picture", idPicture);
@@ -132,7 +130,7 @@ export async function EventToFrameUser(idFrame, idPicture) {
     const response = await fetch("/api/eventtoframeuser", {
         method: 'POST',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         body: formdata
     });

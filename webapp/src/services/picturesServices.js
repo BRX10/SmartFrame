@@ -1,13 +1,12 @@
 import moment from "moment-timezone";
 import "moment/locale/fr";
 
-const { REACT_APP_AUTH } = process.env;
-
-export async function GetAllPictureLibrary(idLibrary) {
+export async function GetAllPictureLibrary(token, idLibrary) {
+    
     const response = await fetch("/api/pictures/"+idLibrary, {
         method: 'GET',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         redirect: 'follow'
     });
@@ -19,7 +18,7 @@ export async function GetAllPictureLibrary(idLibrary) {
         return {
             idx: idx,
             id: item._id.$oid,
-            picture: new Promise( async (resolutionFunc, rejectionFunc) => { resolutionFunc(URL.createObjectURL( await GetPictureFile(item._id.$oid))) }),
+            picture: new Promise( async (resolutionFunc, rejectionFunc) => { resolutionFunc(URL.createObjectURL( await GetPictureFile(token, item._id.$oid))) }),
             title: item.name,
             fileName: item.file_name,
             order: item.order,
@@ -29,7 +28,8 @@ export async function GetAllPictureLibrary(idLibrary) {
     }));
 }
 
-export async function PostPictureLibrary(idLibrary, name, order, file) {
+export async function PostPictureLibrary(token, idLibrary, name, order, file) {
+    
     let formdata = new FormData();
     formdata.append("name", name);
     formdata.append("order", order);
@@ -38,7 +38,7 @@ export async function PostPictureLibrary(idLibrary, name, order, file) {
     const response = await fetch("/api/picture/"+idLibrary, {
         method: 'POST',
         headers: new Headers({
-            'Authorization': REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         body: formdata
     });
@@ -52,11 +52,12 @@ export async function PostPictureLibrary(idLibrary, name, order, file) {
 }
 
 
-export async function GetPictureFile(idPicture) {
+export async function GetPictureFile(token, idPicture) {
+    
     const response = await fetch("/api/picturefile/"+idPicture, {
         method: 'GET',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         redirect: 'follow'
     });
@@ -64,11 +65,12 @@ export async function GetPictureFile(idPicture) {
     return await response.blob();
 }
 
-export async function GetPictureFileToFrame(idPicture, width, height) {
+export async function GetPictureFileToFrame(token, idPicture, width, height) {
+    
     const response = await fetch("/api/picturefileframe/"+width+"/"+height+"/"+idPicture, {
         method: 'GET',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         redirect: 'follow'
     });
@@ -77,11 +79,12 @@ export async function GetPictureFileToFrame(idPicture, width, height) {
 }
 
 
-export async function DeletePicture(idPicture) {
+export async function DeletePicture(token, idPicture) {
+    
     const response = await fetch("/api/picture/"+idPicture, {
         method: 'DELETE',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         })
     });
 

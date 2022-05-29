@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import ButtonNavigation from "../../components/buttonNavigation";
 import { GetAllLibrarys } from "../../services/librarysServices";
 import Spinner from "../../components/spinner";
+import PropTypes from "prop-types";
 
-export default function Librarys() {
+export default function Librarys({ token }) {
 
     const navigate = useNavigate();
 
@@ -14,7 +15,7 @@ export default function Librarys() {
     const [items, setItems] = useState([]);
 
     useEffect(() => {
-        GetAllLibrarys()
+        GetAllLibrarys(token)
             .then((librarys) => {
                 setIsLoaded(true);
                 setItems(librarys);
@@ -22,8 +23,14 @@ export default function Librarys() {
             (error) => {
                 setIsLoaded(true);
                 setError(error);
+
+                setTimeout(function() {
+                    if (error.message === "Le token a expiré") {
+                        navigate("/signout", { replace: true });
+                    }
+                }, 300);
             });
-    }, []);
+    }, [token, navigate]);
 
     if (error) {
         return <div>Erreur : {error.message}</div>;
@@ -43,4 +50,8 @@ export default function Librarys() {
             </Table>
         );
     }
+}
+
+Librarys.propTypes = {
+    token: PropTypes.string.isRequired
 }

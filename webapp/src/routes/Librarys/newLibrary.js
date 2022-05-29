@@ -6,9 +6,10 @@ import Input from "../../components/input";
 import Button from "../../components/button";
 import {ListAction, PostLibrary} from "../../services/librarysServices";
 import Select from "../../components/select";
+import PropTypes from "prop-types";
 
-export default function NewLibrary() {
-
+export default function NewLibrary({ token }) {
+    
     const navigate = useNavigate();
 
     const [library, setLibrary] = useState("");
@@ -26,11 +27,11 @@ export default function NewLibrary() {
     function handleSubmit (event) {
         event.preventDefault();
 
-        PostLibrary(library, delay, action.value)
+        PostLibrary(token, library, delay, action.value)
             .then((library) => {
                 setAlert(true)
-                setTypeAlert("sucess")
-                setMessageAlert("La bibliothéque a bien été ajouté, id : " + library.result)
+                setTypeAlert("sucess");
+                setMessageAlert("La bibliothéque a bien été ajouté, id : " + library.result);
 
                 setLibrary("");
                 setDelay("");
@@ -40,9 +41,15 @@ export default function NewLibrary() {
                 }, 800);
             }, 
             (error) => {
-                setAlert(true)
-                setTypeAlert("error")
-                setMessageAlert("Il y a eu une erreur : " + error.message)
+                setAlert(true);
+                setTypeAlert("error");
+                setMessageAlert("Il y a eu une erreur : " + error.message);
+
+                setTimeout(function() {
+                    if (error.message === "Le token a expiré") {
+                        navigate("/signout", { replace: true });
+                    }
+                }, 300);
             });
     }
     
@@ -98,4 +105,8 @@ export default function NewLibrary() {
             </div>
         </div>
     )
+}
+
+NewLibrary.propTypes = {
+    token: PropTypes.string.isRequired
 }

@@ -6,8 +6,9 @@ import Input from "../../components/input";
 import Button from "../../components/button";
 import DropzoneImage from "../../components/dropzone";
 import { PostPictureLibrary } from "../../services/picturesServices";
+import PropTypes from "prop-types";
 
-export default function NewImage() {
+export default function NewImage({ token }) {
 
     const navigate = useNavigate();
     const params = useParams();
@@ -26,7 +27,7 @@ export default function NewImage() {
     function handleSubmit(event ) {
         event.preventDefault();
         
-        PostPictureLibrary(params.idLibrary, name, params.order, file)
+        PostPictureLibrary(token, params.idLibrary, name, params.order, file)
             .then((picture) => {
                 setAlert(true)
                 setTypeAlert("sucess")
@@ -39,9 +40,15 @@ export default function NewImage() {
                 }, 800);
             },
             (error) => {
-                setAlert(true)
-                setTypeAlert("error")
-                setMessageAlert("Il y a eu une erreur : " + error.message)
+                setAlert(true);
+                setTypeAlert("error");
+                setMessageAlert("Il y a eu une erreur : " + error.message);
+
+                setTimeout(function() {
+                    if (error.message === "Le token a expiré") {
+                        navigate("/signout", { replace: true });
+                    }
+                }, 300);
             });
     }
 
@@ -98,4 +105,9 @@ export default function NewImage() {
             </div>
         </div>
     )
+}
+
+
+NewImage.propTypes = {
+    token: PropTypes.string.isRequired
 }

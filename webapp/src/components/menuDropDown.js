@@ -88,6 +88,19 @@ export default function MenuDropDown() {
                                             )}
                                         </Menu.Item>
                                     </div>
+
+                                    <div className="py-1 bg-red-500 border border-red-600 divide-y divide-red-600 rounded-b-md">
+                                        <Menu.Item>
+                                            {({ active }) => (
+                                                <a
+                                                    href="/signout"
+                                                    className={`${ active ? "bg-red-400 text-yellow-300 dark:text-gray-300" : "text-white dark:text-gray-300" } flex justify-center w-full px-4 py-2 text-sm leading-5 text-center`}
+                                                >
+                                                    Se déconnecter
+                                                </a>
+                                            )}
+                                        </Menu.Item>
+                                    </div>
                                     
                                 </Menu.Items>
                             </Transition>

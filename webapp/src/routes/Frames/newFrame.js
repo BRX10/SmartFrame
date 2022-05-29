@@ -7,8 +7,9 @@ import ButtonNavigation from "../../components/buttonNavigation";
 import {PostFrame, ListType, ListOrientation} from "../../services/framesServices";
 import Spinner from "../../components/spinner";
 import Select from "../../components/select";
+import PropTypes from "prop-types";
 
-export default function NewFrame() {
+export default function NewFrame({ token }) {
 
     const navigate = useNavigate();
 
@@ -35,7 +36,7 @@ export default function NewFrame() {
 
         setIsLoaded(false);
         setAlert(false);
-        PostFrame(frame, ip, key, inch, resolution_width, resolution_height, orientation.value, type.value)
+        PostFrame(token, frame, ip, key, inch, resolution_width, resolution_height, orientation.value, type.value)
             .then((result) => {
                 setIsLoaded(true);
                 setAlert(true);
@@ -57,6 +58,12 @@ export default function NewFrame() {
                 setAlert(true);
                 setTypeAlert("error");
                 setMessageAlert("Il y a eu une erreur : " + error.message);
+
+                setTimeout(function() {
+                    if (error.message === "Le token a expiré") {
+                        navigate("/signout", { replace: true });
+                    }
+                }, 300);
             })
     }
     
@@ -163,4 +170,8 @@ export default function NewFrame() {
             </div>
         </div>
     )
+}
+
+NewFrame.propTypes = {
+    token: PropTypes.string.isRequired
 }

@@ -5,9 +5,13 @@ import Spinner from "../../components/spinner";
 import TransitionView from "../../components/transition";
 import InfiniteScroll from "react-infinite-scroll-component";
 import {GetEventsLogArduino} from "../../services/eventsLogArduinoServices";
+import PropTypes from "prop-types";
+import {useNavigate} from "react-router-dom";
 
-export default function ArduinoLog() {
+export default function ArduinoLog({ token }) {
 
+    const navigate = useNavigate();
+    
     const [hasMore, setHasMore] = useState(true);
     const [pageServer, setPageServer] = useState(1);
     const [error, setError] = useState(null);
@@ -15,7 +19,7 @@ export default function ArduinoLog() {
     const [logs, setLogs] = useState([]);
 
     function getData() {
-        GetEventsLogArduino(pageServer + 1)
+        GetEventsLogArduino(token,pageServer + 1)
             .then((eventsLogArduino) => {
                     if (eventsLogArduino.length === 0) {
                         setHasMore(false);
@@ -29,12 +33,18 @@ export default function ArduinoLog() {
                 (error) => {
                     setIsLoaded(true);
                     setError(error);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 }
             );
     }
 
     useEffect(() => {
-        GetEventsLogArduino()
+        GetEventsLogArduino(token)
             .then((eventsLogArduino) => {
                     setIsLoaded(true);
                     setLogs(eventsLogArduino);
@@ -42,9 +52,15 @@ export default function ArduinoLog() {
                 (error) => {
                     setIsLoaded(true);
                     setError(error);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 }
             );
-    }, []);
+    }, [token, navigate]);
 
     function classNames(...classes) {
         return classes.filter(Boolean).join(' ')
@@ -91,4 +107,9 @@ export default function ArduinoLog() {
             </TransitionView>
         )
     }
+}
+
+
+ArduinoLog.propTypes = {
+    token: PropTypes.string.isRequired
 }

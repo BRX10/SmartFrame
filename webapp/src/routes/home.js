@@ -7,8 +7,12 @@ import {GetEventsLog} from "../services/eventsLogServices";
 import Spinner from "../components/spinner";
 import TransitionView from "../components/transition";
 import InfiniteScroll from "react-infinite-scroll-component";
+import PropTypes from "prop-types";
+import {useNavigate} from "react-router-dom";
 
-export default function Home() {
+export default function Home({ token }) {
+
+    const navigate = useNavigate();
     
     const [hasMore, setHasMore] = useState(true);
     const [pageServer, setPageServer] = useState(1);
@@ -21,7 +25,7 @@ export default function Home() {
     });
     
     function getData() {
-        GetEventsLog(pageServer + 1)
+        GetEventsLog(token,pageServer + 1)
             .then((eventsLog) => {
                     if (eventsLog["Évenements"].length === 0) {
                         setHasMore(false);
@@ -38,6 +42,12 @@ export default function Home() {
                     setPageServer(pageServer + 1);
                 },
                 (error) => {
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 200);
+                    
                     setIsLoaded(true);
                     setError(error);
                 }
@@ -45,17 +55,23 @@ export default function Home() {
     }
 
     useEffect(() => {
-        GetEventsLog()
+        GetEventsLog(token)
             .then((eventsLog) => {
                     setIsLoaded(true);
                     setCategories(eventsLog);
                 },
                 (error) => {
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
+                    
                     setIsLoaded(true);
                     setError(error);
                 }
             );
-    }, []);
+    }, [token, navigate]);
 
     function classNames(...classes) {
         return classes.filter(Boolean).join(' ')
@@ -249,4 +265,8 @@ export default function Home() {
             </TransitionView>
         )
     }
+}
+
+Home.propTypes = {
+    token: PropTypes.string.isRequired
 }

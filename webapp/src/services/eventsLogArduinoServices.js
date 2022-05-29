@@ -1,6 +1,4 @@
-const { REACT_APP_AUTH } = process.env;
-
-export async function GetEventsLogArduino(page = 1, limit = 100) {
+export async function GetEventsLogArduino(token, page = 1, limit = 200) {
     let formdata = new FormData();
     formdata.append("page", page);
     formdata.append("limit", limit);
@@ -8,7 +6,7 @@ export async function GetEventsLogArduino(page = 1, limit = 100) {
     const response = await fetch("/api/eventsarduinologpaginateapi", {
         method: 'POST',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         body: formdata
     });

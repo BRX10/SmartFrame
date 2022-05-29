@@ -41,7 +41,20 @@ class UsernameDoesnotExistsError(Exception):
 class BadTokenError(Exception):
     pass
 
+
 class ExpiredSignatureError(Exception):
+    pass
+
+
+class RevokedTokenError(Exception):
+    pass
+
+
+class InvalidHeaderError(Exception):
+    pass
+
+
+class WrongTokenError(Exception):
     pass
 
 errors = {
@@ -75,6 +88,18 @@ errors = {
     },
     "ExpiredSignatureError": {
         "message": "Le token a expiré",
+        "status": 401
+    },
+    "RevokedTokenError": {
+        "message": "Le token a expiré",
+        "status": 401
+    },
+    "InvalidHeaderError": {
+        "message": "Header Invalid",
+        "status": 500
+    },
+    "WrongTokenError": {
+         "message": "Le token a expiré",
         "status": 401
     }
 }

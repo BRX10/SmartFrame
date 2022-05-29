@@ -16,8 +16,11 @@ import {
 } from "../../services/framesServices";
 import ButtonSimple from "../../components/buttonSimple";
 import Modal from "../../components/modal";
+import {useNavigate} from "react-router-dom";
 
 export default function Image(props) {
+
+    const navigate = useNavigate();
 
     const [picture, setPicture] = useState(null);
     
@@ -33,13 +36,19 @@ export default function Image(props) {
     
     
     useEffect(() => {
-        GetAllFrames()
+        GetAllFrames(props.token)
             .then(frames => {
                     setIsLoadedModal(true);
                     setFrames(frames);
                 },
-                (_) => {
+                (error) => {
                     setIsLoadedModal(true);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 });
         
         if (props.pictureModal.picture) {
@@ -52,7 +61,7 @@ export default function Image(props) {
                     });
         }
         
-    }, [props.pictureModal]);
+    }, [props.pictureModal, props.token, navigate]);
     
 
     function closeModal() {
@@ -68,13 +77,19 @@ export default function Image(props) {
         setIsLoadedPctToFrame(false);
         setAlertModal(false);
 
-        GetPictureFileToFrame(props.pictureModal.id, select.width, select.height)
+        GetPictureFileToFrame(props.token, props.pictureModal.id, select.width, select.height)
             .then(pictureToFrame => {
                     setIsLoadedPctToFrame(true);
                     setPictureToFrameShow(URL.createObjectURL(pictureToFrame));
                 },
-                (_) => {
+                (error) => {
                     setIsLoadedPctToFrame(true);
+                    
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 });
 
     }
@@ -91,7 +106,7 @@ export default function Image(props) {
             return;
         }
 
-        EventToFrameUser(selectedFrame.id, props.pictureModal.id)
+        EventToFrameUser(props.token, selectedFrame.id, props.pictureModal.id)
             .then((_) => {
                     setAlertModal(true);
                     setTypeAlertModal("sucess");
@@ -103,6 +118,12 @@ export default function Image(props) {
                     setTypeAlertModal("error")
                     setMessageAlertModal("Il y a eu une erreur lors du changement de l'image : " + error.message)
                     setIsLoadedSendModal(true);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 });
 
     }
@@ -111,12 +132,12 @@ export default function Image(props) {
         setAlertModal(false);
         setIsLoadedSendModal(false);
 
-        DeletePicture(id)
+        DeletePicture(props.token, id)
             .then((_) => {
                     setAlertModal(true);
                     setTypeAlertModal("sucess");
                     setMessageAlertModal("L'image a bien été archivé");
-                    props.setIsArchive(!props.isArchive);
+                    props.isArchive();
                     setIsLoadedSendModal(true);
 
                     setTimeout(function() {
@@ -129,6 +150,12 @@ export default function Image(props) {
                     setAlertModal(true);
                     setTypeAlertModal("error");
                     setMessageAlertModal("Il y a eu une erreur : " + error.message);
+
+                    setTimeout(function() {
+                        if (error.message === "Le token a expiré") {
+                            navigate("/signout", { replace: true });
+                        }
+                    }, 300);
                 })
     }
 

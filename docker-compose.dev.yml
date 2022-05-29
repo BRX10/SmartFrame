@@ -55,9 +55,6 @@ services:
     restart: always
     ports:
       - '8081:8081'
-    #command: nodemon --exec npm run dev # Pour le développement
-    environment:
-      REACT_APP_AUTH: ${TOKEN_API}
     volumes: # Pour le dev en prod copier les fichiers + build + supprimer les sources
       - ./webapp/:/webapp
     depends_on:

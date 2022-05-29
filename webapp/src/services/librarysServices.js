@@ -1,13 +1,12 @@
 import moment from "moment-timezone";
 import "moment/locale/fr";
 
-const { REACT_APP_AUTH } = process.env;
-
-export async function GetAllLibrarys() {
+export async function GetAllLibrarys(token) {
+    
     const response = await fetch("/api/librarys", {
         method: 'GET',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization':  'Bearer ' + token,
         }),
         redirect: 'follow'
     });
@@ -27,11 +26,12 @@ export async function GetAllLibrarys() {
 }
 
 
-export async function GetLibrary(idLibrary) {
+export async function GetLibrary(token, idLibrary) {
+    
     const response = await fetch("/api/library/"+idLibrary, {
         method: 'GET',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         redirect: 'follow'
     });
@@ -43,11 +43,12 @@ export async function GetLibrary(idLibrary) {
 }
 
 
-export async function DeleteLibrary(idLibrary) {
+export async function DeleteLibrary(token, idLibrary) {
+    
     const response = await fetch("/api/library/"+idLibrary, {
         method: 'DELETE',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         })
     });
 
@@ -58,7 +59,8 @@ export async function DeleteLibrary(idLibrary) {
 }
 
 
-export async function PostLibrary(library, delay, action) {
+export async function PostLibrary(token, library, delay, action) {
+    
     let formdata = new FormData();
     formdata.append("name", library);
     formdata.append("delay", delay);
@@ -67,7 +69,7 @@ export async function PostLibrary(library, delay, action) {
     const response = await fetch("/api/library", {
         method: 'POST',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         body: formdata
     });
@@ -81,7 +83,8 @@ export async function PostLibrary(library, delay, action) {
 }
 
 
-export async function PutLibrary(idLibrary, library = null, delay = null, action = null) {
+export async function PutLibrary(token, idLibrary, library = null, delay = null, action = null) {
+    
     let formdata = new FormData();
     if (library) {
         formdata.append("library", library);
@@ -96,7 +99,7 @@ export async function PutLibrary(idLibrary, library = null, delay = null, action
     const response = await fetch("/api/library/"+idLibrary, {
         method: 'PUT',
         headers: new Headers({
-            'Authorization':  REACT_APP_AUTH,
+            'Authorization': 'Bearer ' + token,
         }),
         body: formdata
     });
