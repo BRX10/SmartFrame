@@ -18,6 +18,8 @@ import ButtonSimple from "../../components/buttonSimple";
 import Modal from "../../components/modal";
 
 export default function Image(props) {
+
+    const [picture, setPicture] = useState(null);
     
     const [alertModal, setAlertModal] = useState(false);
     const [typeAlertModal, setTypeAlertModal] = useState("");
@@ -39,18 +41,26 @@ export default function Image(props) {
                 (_) => {
                     setIsLoadedModal(true);
                 });
+        
+        if (props.pictureModal.picture) {
+            props.pictureModal.picture
+                .then(pictureLoaded => {
+                        setPicture(pictureLoaded);
+                    },
+                    (error) => {
+                        console.log(error.message);
+                    });
+        }
+        
     }, [props.pictureModal]);
     
 
     function closeModal() {
         props.closeModal()
 
-        setTimeout(function() {
-            setAlertModal(false);
-            props.setPictureModal({});
-            setSelectedFrame({ title: "Sélectionner le cadre"});
-            setPictureToFrameShow(null);
-        }, 200);
+        setAlertModal(false);
+        setSelectedFrame({ title: "Sélectionner le cadre"});
+        setPictureToFrameShow(null);
     }
 
     function changeSelectedFrame(select) {
@@ -111,7 +121,6 @@ export default function Image(props) {
 
                     setTimeout(function() {
                         props.closeModal();
-                        props.setPictureModal([]);
                         setAlertModal(false);
                     }, 1000);
                 },
@@ -163,32 +172,37 @@ export default function Image(props) {
                             type="number"
                             value={props.pictureModal.order}
                             disabled={true}/>
-
-                        <img
-                            className="mt-3"
-                            style={{height: "15rem"}}
-                            src={props.pictureModal.picture}
-                            alt={props.pictureModal.fileName}/>
+                        
+                        <div className="flex justify-center">
+                            { picture ? (
+                                <img
+                                    className="mt-3"
+                                    style={{maxHeight: "17rem", display: "block"}}
+                                    src={picture}
+                                    alt={props.pictureModal.fileName}/>
+                            ) : (
+                                <Spinner className="mt-20 mb-20"/>
+                            )}
+                        </div>
 
                         <Select
-                            className="mt-5"
+                            className={pictureToFrameShow ? "mt-4" : "mt-4 mb-20"}
                             list={frames}
                             selected={selectedFrame}
                             setSelected={ (select) => changeSelectedFrame(select) } />
 
                         { pictureToFrameShow || !isLoadedPctToFrame ? (
-                            <>
+                            <div className="flex justify-center">
                                 { !isLoadedPctToFrame ? (
-                                    <Spinner className="mt-10 mb-5"/>
-                                ) : null }
-
-                                <img
-                                    hidden={!isLoadedPctToFrame}
-                                    className="mt-3"
-                                    style={{height: "15rem"}}
-                                    src={pictureToFrameShow}
-                                    alt="pictureToFrameShow" />
-                            </>
+                                    <Spinner className="mt-20 mb-20"/>
+                                ) : (
+                                    <img
+                                        className="mt-3"
+                                        style={{maxHeight: "17rem"}}
+                                        src={pictureToFrameShow}
+                                        alt="pictureToFrameShow" />
+                                )}
+                            </div>
                         ) : null}
 
                     </div>

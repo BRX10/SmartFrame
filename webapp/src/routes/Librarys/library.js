@@ -125,6 +125,7 @@ export default function Library() {
 
     function closeModal() {
         setIsOpen(false);
+        setPictureModal({});
         
         if (params.idPicture) {
             navigate("/library/"+params.idLibrary, { replace: true });
@@ -157,7 +158,6 @@ export default function Library() {
                             isOpen={isOpen}
                             closeModal={closeModal}
                             pictureModal={pictureModal}
-                            setPictureModal={setPictureModal}
                             setIsArchive={setIsArchive}
                             isArchive={setIsArchive}
                         />

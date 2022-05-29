@@ -19,7 +19,7 @@ export async function GetAllPictureLibrary(idLibrary) {
         return {
             idx: idx,
             id: item._id.$oid,
-            picture: URL.createObjectURL(await GetPictureFile(item._id.$oid)),
+            picture: new Promise( async (resolutionFunc, rejectionFunc) => { resolutionFunc(URL.createObjectURL( await GetPictureFile(item._id.$oid))) }),
             title: item.name,
             fileName: item.file_name,
             order: item.order,
@@ -28,7 +28,6 @@ export async function GetAllPictureLibrary(idLibrary) {
         }
     }));
 }
-
 
 export async function PostPictureLibrary(idLibrary, name, order, file) {
     let formdata = new FormData();
