@@ -33,6 +33,10 @@ export default function Library({ token }) {
     const [messageAlert, setMessageAlert] = useState("");
     const [isLoaded, setIsLoaded] = useState(false);
 
+    const [editingDelay, setEditingDelay] = useState(false);
+    const [delayInput, setDelayInput] = useState("");
+    const [savingDelay, setSavingDelay] = useState(false);
+
     const [isOpen, setIsOpen] = useState(false);
     const [pictureModal, setPictureModal] = useState({});
 
@@ -75,6 +79,28 @@ export default function Library({ token }) {
                 setMessageAlert("Bibliothèque archivée");
                 setTimeout(() => navigate("/librarys", { replace: true }), 800);
             }, (error) => {
+                setAlert(true);
+                setTypeAlert("error");
+                setMessageAlert("Erreur : " + error.message);
+                if (error.message === "Le token a expiré") setTimeout(() => navigate("/signout", { replace: true }), 300);
+            });
+    }
+
+    function saveDelay() {
+        const val = parseInt(delayInput, 10);
+        if (!val || val < 1) return;
+        setSavingDelay(true);
+        setAlert(false);
+        PutLibrary(token, params.idLibrary, null, val, null)
+            .then((lib) => {
+                setDelay(lib.delay);
+                setEditingDelay(false);
+                setSavingDelay(false);
+                setAlert(true);
+                setTypeAlert("sucess");
+                setMessageAlert("Délai mis à jour");
+            }, (error) => {
+                setSavingDelay(false);
                 setAlert(true);
                 setTypeAlert("error");
                 setMessageAlert("Erreur : " + error.message);
@@ -149,8 +175,46 @@ export default function Library({ token }) {
             {/* Library info card */}
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 mb-5">
                 <h2 className="text-lg font-semibold text-zinc-100 mb-3">{library}</h2>
-                <div className="flex items-center gap-4 text-sm text-zinc-400 mb-4">
-                    <span>Délai : <span className="text-zinc-200 font-medium">{delay}s</span></span>
+                {/* Délai — éditable inline */}
+                <div className="mb-4">
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1.5">Délai entre images</p>
+                    {editingDelay ? (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                min="1"
+                                value={delayInput}
+                                onChange={e => setDelayInput(e.target.value)}
+                                className="w-24 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-orange-500"
+                                placeholder="secondes"
+                                autoFocus
+                            />
+                            <span className="text-xs text-zinc-500">secondes</span>
+                            <button
+                                onClick={saveDelay}
+                                disabled={savingDelay}
+                                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white disabled:opacity-50 transition-colors"
+                            >
+                                {savingDelay ? "…" : "Sauvegarder"}
+                            </button>
+                            <button
+                                onClick={() => setEditingDelay(false)}
+                                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                            >
+                                Annuler
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <span className="text-zinc-200 font-medium text-sm">{delay}s</span>
+                            <button
+                                onClick={() => { setDelayInput(String(delay)); setEditingDelay(true); }}
+                                className="text-xs text-orange-400 hover:text-orange-300 transition-colors"
+                            >
+                                Modifier
+                            </button>
+                        </div>
+                    )}
                 </div>
                 <div>
                     <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1.5">Mode de lecture</p>

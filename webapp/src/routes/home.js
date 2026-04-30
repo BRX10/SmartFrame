@@ -3,6 +3,7 @@ import moment from "moment-timezone";
 import "moment/locale/fr";
 import { GetEventsLog } from "../services/eventsLogServices";
 import { GetAllFrames, GetFrame, EventToFrame } from "../services/framesServices";
+import { GetPictureFile } from "../services/picturesServices";
 import Spinner from "../components/spinner";
 import InfiniteScroll from "react-infinite-scroll-component";
 import PropTypes from "prop-types";
@@ -14,10 +15,21 @@ function FrameStatusCard({ frameId, token, lastImageEvent }) {
     const [frame, setFrame] = useState(null);
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
+    const [thumbUrl, setThumbUrl] = useState(null);
 
     useEffect(() => {
         GetFrame(token, frameId).then(setFrame).catch(() => {});
     }, [token, frameId]);
+
+    useEffect(() => {
+        const picId = lastImageEvent?.picture?._id?.$oid;
+        if (!picId) return;
+        let alive = true;
+        GetPictureFile(token, picId)
+            .then(blob => { if (alive) setThumbUrl(URL.createObjectURL(blob)); })
+            .catch(() => {});
+        return () => { alive = false; };
+    }, [token, lastImageEvent]);
 
     function refresh() {
         if (!frame?.library_display) return;
@@ -38,59 +50,72 @@ function FrameStatusCard({ frameId, token, lastImageEvent }) {
     const lastPictureName = lastImageEvent?.picture?.name;
 
     return (
-        <div className="shrink-0 w-56 rounded-2xl border border-zinc-800 bg-zinc-900 p-4 flex flex-col gap-2">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <a href={`/frames/${frame._id.$oid}`} className="font-semibold text-sm text-zinc-100 truncate hover:text-orange-400 transition-colors">
-                    {frame.name}
-                </a>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ml-2" title="Actif" />
+        <div className="shrink-0 w-48 rounded-2xl border border-zinc-800 bg-zinc-900 overflow-hidden flex flex-col">
+            {/* Thumbnail */}
+            <div className="w-full aspect-[4/3] bg-zinc-800 flex items-center justify-center overflow-hidden">
+                {thumbUrl ? (
+                    <img src={thumbUrl} alt="Affichage actuel" className="w-full h-full object-cover" />
+                ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8 text-zinc-700">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                )}
             </div>
 
-            {/* Library & delay */}
-            {library ? (
-                <div className="flex flex-col gap-0.5">
-                    <a href={`/library/${library._id.$oid}`} className="text-xs text-orange-400 hover:underline truncate">
-                        {library.name}
+            <div className="p-3 flex flex-col gap-2 flex-1">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <a href={`/frames/${frame._id.$oid}`} className="font-semibold text-sm text-zinc-100 truncate hover:text-orange-400 transition-colors">
+                        {frame.name}
                     </a>
-                    <p className="text-xs text-zinc-500">
-                        Séquence toutes les <span className="text-zinc-300">{library.delay}s</span>
-                    </p>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ml-2" title="Actif" />
                 </div>
-            ) : (
-                <p className="text-xs text-zinc-600 italic">Aucune bibliothèque active</p>
-            )}
 
-            {/* Last image */}
-            {lastPictureName && (
-                <p className="text-[10px] text-zinc-600 truncate">
-                    Dernière : <span className="text-zinc-400">{lastPictureName}</span>
-                </p>
-            )}
-
-            {/* Refresh button */}
-            <button
-                onClick={refresh}
-                disabled={sending || !library}
-                className={`mt-auto w-full flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-lg transition-all
-                    ${sent
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 disabled:opacity-40'
-                    }`}
-            >
-                {sending ? (
-                    <><div className="w-3 h-3 border border-zinc-600 border-t-orange-400 rounded-full animate-spin" /> Envoi…</>
-                ) : sent ? (
-                    <>✓ Image actualisée</>
+                {/* Library & delay */}
+                {library ? (
+                    <div className="flex flex-col gap-0.5">
+                        <a href={`/library/${library._id.$oid}`} className="text-xs text-orange-400 hover:underline truncate">
+                            {library.name}
+                        </a>
+                        <p className="text-xs text-zinc-500">
+                            Toutes les <span className="text-zinc-300">{library.delay}s</span>
+                        </p>
+                    </div>
                 ) : (
-                    <>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
-                            <path fillRule="evenodd" d="M13.836 2.477a.75.75 0 01.75.75v3.182a.75.75 0 01-.75.75h-3.182a.75.75 0 010-1.5h1.37l-.84-.841a4.5 4.5 0 00-7.08 1.401.75.75 0 01-1.405-.516A6 6 0 0112.52 3.31l.841.84V3.227a.75.75 0 01.75-.75zm-.911 7.5A.75.75 0 0113.199 11a6 6 0 01-9.47 2.71l-.84-.84v1.371a.75.75 0 01-1.5 0V11.06a.75.75 0 01.75-.75h3.182a.75.75 0 010 1.5H4.75l.84.841A4.5 4.5 0 0012.75 11.6a.75.75 0 011.175.377z" clipRule="evenodd" />
-                        </svg>
-                        Actualiser
-                    </>
+                    <p className="text-xs text-zinc-600 italic">Aucune bibliothèque active</p>
                 )}
-            </button>
+
+                {/* Last image name */}
+                {lastPictureName && (
+                    <p className="text-[10px] text-zinc-600 truncate">
+                        <span className="text-zinc-500">{lastPictureName}</span>
+                    </p>
+                )}
+
+                {/* Refresh button */}
+                <button
+                    onClick={refresh}
+                    disabled={sending || !library}
+                    className={`mt-auto w-full flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-lg transition-all
+                        ${sent
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 disabled:opacity-40'
+                        }`}
+                >
+                    {sending ? (
+                        <><div className="w-3 h-3 border border-zinc-600 border-t-orange-400 rounded-full animate-spin" /> Envoi…</>
+                    ) : sent ? (
+                        <>✓ Image actualisée</>
+                    ) : (
+                        <>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
+                                <path fillRule="evenodd" d="M13.836 2.477a.75.75 0 01.75.75v3.182a.75.75 0 01-.75.75h-3.182a.75.75 0 010-1.5h1.37l-.84-.841a4.5 4.5 0 00-7.08 1.401.75.75 0 01-1.405-.516A6 6 0 0112.52 3.10l.841.84V3.227a.75.75 0 01.75-.75zm-.911 7.5A.75.75 0 0113.199 11a6 6 0 01-9.47 2.71l-.84-.84v1.371a.75.75 0 01-1.5 0V11.06a.75.75 0 01.75-.75h3.182a.75.75 0 010 1.5H4.75l.84.841A4.5 4.5 0 0012.75 11.6a.75.75 0 011.175.377z" clipRule="evenodd" />
+                            </svg>
+                            Actualiser
+                        </>
+                    )}
+                </button>
+            </div>
         </div>
     );
 }

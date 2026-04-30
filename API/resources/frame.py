@@ -180,35 +180,34 @@ class FrameAPI(Resource):
         try:
             delete_frame = Frames.objects.get(id=id)
 
-            payload = {
-                'key': delete_frame.key, 
-                'config': False,
-            }
-            response_json = requests.post("http://"+delete_frame.ip+"/reset", data=payload, timeout=8).json()
+            # Tentative de reset du Pi (non-bloquant — on supprime même si injoignable)
+            try:
+                payload = {
+                    'key': delete_frame.key,
+                    'config': False,
+                }
+                requests.post("http://"+delete_frame.ip+"/reset", data=payload, timeout=8)
+            except Exception:
+                pass  # Pi hors ligne ou timeout — on continue quand même
 
-            if response_json.get("success"):
-                
-                delete_frame.update(is_active=False)
+            delete_frame.update(is_active=False)
 
-                cron = CronTab(user='root')
-                # Suppresion du cron si il existe
-                for job in cron:
-                    if job.comment == id:
-                        cron.remove(job)
-                cron.write()
+            cron = CronTab(user='root')
+            # Suppression du cron si il existe
+            for job in cron:
+                if job.comment == id:
+                    cron.remove(job)
+            cron.write()
 
-                # On envoie le log 
-                EventsLog(
-                    type_event = "user",
-                    user = User.objects.get(id=get_jwt_identity()),
-                    frame = delete_frame,
-                    is_delete = True
-                ).save()
+            # On envoie le log
+            EventsLog(
+                type_event = "user",
+                user = User.objects.get(id=get_jwt_identity()),
+                frame = delete_frame,
+                is_delete = True
+            ).save()
 
-                return {'success': True}, 200
-
-            else: 
-                return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
+            return {'success': True}, 200
 
         except (FieldDoesNotExist, ValidationError):
             raise SchemaValidationError
