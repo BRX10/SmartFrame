@@ -31,6 +31,9 @@ class New_FrameAPI(Resource):
             # On envoie la frame
             new_frame.save()
 
+            # Tentative de configuration du Pi (non-bloquant)
+            # Si le Pi est injoignable, le Frame est quand même créé
+            pi_configured = False
             try:
                 payload = {
                     'key': form.get("key"), 
@@ -40,27 +43,19 @@ class New_FrameAPI(Resource):
                     'host': os.getenv("HOST_SERVER")
                 }
                 response_json = requests.post("http://"+form.get("ip")+"/config", data=payload, timeout=8).json()
-
                 if response_json.get("success"):
-                    # On envoie le log 
-                    EventsLog(
-                        type_event = "user",
-                        user = User.objects.get(id=get_jwt_identity()),
-                        frame = new_frame
-                    ).save()
-
-                    # On return l'id
-                    return {'result': str(new_frame.id)}, 200
-
-                else:
-                    # On supprime le frame précédement créé
-                    new_frame.delete()
-                    return {'message': response_json.get("message"), 'status': 400}, 400
-
+                    pi_configured = True
             except:
-                # On supprime le frame précédement créé
-                new_frame.delete()
-                return {'message': "Une erreur est survenue", 'status': 400}, 400
+                pass  # Pi injoignable ou timeout — on continue quand meme
+
+            # Log dans tous les cas
+            EventsLog(
+                type_event = "user",
+                user = User.objects.get(id=get_jwt_identity()),
+                frame = new_frame
+            ).save()
+
+            return {'result': str(new_frame.id), 'pi_configured': pi_configured}, 200
 
         except (FieldDoesNotExist, ValidationError):
             raise SchemaValidationError
