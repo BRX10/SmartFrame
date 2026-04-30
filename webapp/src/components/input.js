@@ -1,8 +1,21 @@
 export default function Input(props) {
     return (
-        <div className={"flex mt-2 w-full " + props.className}>
-            <span style={{width: "14rem"}} className="inline-flex items-center px-4 text-sm text-orange-900 bg-orange-200 border border-r-0 border-orange-300 rounded-l-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600 ">{props.title}</span>
-            <input disabled={props.disabled} onChange={ (e) => props.onChange(e.target.value)} value={props.value} name={props.name} step={props.step} className="w-full rounded-none rounded-r-lg bg-orange-50 text-orange-900 block text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white cursor-default border border-orange-200 focus:outline-none focus:border-orange-200 focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300" type={props.type} style={{width: "100%"}} required={props.required} />
+        <div className={"flex flex-col gap-1 mt-4 w-full " + (props.className || "")}>
+            {props.title && (
+                <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider px-1">
+                    {props.title}
+                </label>
+            )}
+            <input
+                disabled={props.disabled}
+                onChange={(e) => props.onChange && props.onChange(e.target.value)}
+                value={props.value}
+                name={props.name}
+                step={props.step}
+                type={props.type}
+                required={props.required}
+                className="w-full bg-zinc-800 text-zinc-100 placeholder-zinc-500 text-sm px-4 py-3 rounded-xl border border-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            />
         </div>
     );
 }

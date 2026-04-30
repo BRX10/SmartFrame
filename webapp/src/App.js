@@ -4,7 +4,7 @@ import Frames from "./routes/Frames/frames";
 import Librarys from "./routes/Librarys/librarys";
 import Home from "./routes/home";
 import NotFound from "./routes/notFound";
-import Header from "./components/header";
+import Layout from "./components/layout";
 import NewFrame from "./routes/Frames/newFrame";
 import NewLibrary from "./routes/Librarys/newLibrary";
 import Library from "./routes/Librarys/library";
@@ -28,7 +28,7 @@ export function App() {
                 <Route path="*" element={<NotFound />} />
                 <Route path="signout" element={<Signout token={token} delToken={delToken} />} />
                 
-                <Route element={<Header />}>
+                <Route element={<Layout />}>
                     <Route path="/" element={<Home token={token} />} />
 
                     <Route path="frames" element={ <Frames token={token} /> } />

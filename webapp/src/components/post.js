@@ -1,36 +1,30 @@
 export default function Post(props) {
-    function classNames(...classes) {
-        return classes.filter(Boolean).join(' ')
-    }
-    
     return (
-        <li className="relative rounded-md p-3 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 mt-1" key={props.idx}>
-            <h3 className="text-sm font-medium leading-5 dark:text-white ">
+        <li
+            key={props.idx}
+            className={
+                "relative rounded-xl px-4 py-3 mt-1.5 border border-zinc-800 bg-zinc-900 transition-colors " +
+                (props.isClick ? "hover:bg-zinc-800 hover:border-zinc-700 active:bg-zinc-700" : "")
+            }
+        >
+            <p className="text-sm text-zinc-200 leading-snug">
                 {props.title}
                 {props.children}
-            </h3>
-
-            <ul className="mt-1 flex space-x-1 text-xs font-normal leading-4 text-gray-500 dark:text-gray-300">
-                { props.list.map( (item, idx) => (
-                    <>
-                        <li>{item}</li>
-                        { props.list.length-1 !== idx ? (
-                            <li>&middot;</li>
-                        ) : null }
-                    </>
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-x-3">
+                {props.list.map((item, idx) => (
+                    <span key={idx} className="text-xs text-zinc-500">
+                        {item}
+                    </span>
                 ))}
-
-                { props.isClick ? (
-                    <a
-                        href="#"
-                        onClick={ () => props.onClick()}
-                        className={classNames(
-                            'absolute inset-0 rounded-md',
-                            'ring-blue-400 focus:z-10 focus:outline-none focus:ring-2'
-                        )}
-                    />
-                ) : null}
-            </ul>
+            </div>
+            {props.isClick ? (
+                <button
+                    onClick={() => props.onClick()}
+                    className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-950"
+                    aria-label="Ouvrir"
+                />
+            ) : null}
         </li>
     );
 }

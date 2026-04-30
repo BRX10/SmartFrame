@@ -7,49 +7,44 @@ export default function Select(props) {
         <div className={"w-full " + props.className}>
             <Listbox value={props.selected} onChange={props.setSelected}>
                 <div className="relative mt-1">
-                    <Listbox.Button className="relative w-full cursor-default border border-orange-200 rounded-lg bg-white py-2 pl-3 pr-10 text-left focus:outline-none focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm dark:bg-gray-600 dark:border-gray-600 ">
-                        <span className="block truncate text-orange-900 dark:text-gray-400 ">{props.selected.title}</span>
-                        { !props.disabled ? (
-                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                <SelectorIcon       
-                                    className="h-5 w-5 text-gray-400"
-                                    aria-hidden="true"
-                                />
+                    <Listbox.Button className="relative w-full cursor-default bg-zinc-800 border border-zinc-700 rounded-xl py-3 pl-4 pr-10 text-left text-sm text-zinc-100 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 disabled:opacity-50 transition-colors">
+                        <span className="block truncate">{props.selected.title}</span>
+                        {!props.disabled ? (
+                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                <SelectorIcon className="h-4 w-4 text-zinc-400" aria-hidden="true" />
                             </span>
-                        ): null }
+                        ) : null}
                     </Listbox.Button>
-                    { !props.disabled ? (
+                    {!props.disabled ? (
                         <Transition
                             as={Fragment}
                             leave="transition ease-in duration-100"
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
                         >
-                            <Listbox.Options className="absolute mt-1 max-h-60 w-full border border-orange-200 overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm dark:bg-gray-600 dark:border-gray-600 " style={{zIndex: "10000"}}>
+                            <Listbox.Options
+                                className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-zinc-800 border border-zinc-700 py-1 text-sm shadow-xl focus:outline-none"
+                                style={{zIndex: "10000"}}
+                            >
                                 {props.list.map((item, itemIdx) => (
                                     <Listbox.Option
                                         key={itemIdx}
                                         className={({ active }) =>
-                                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                                active ? 'bg-amber-100 text-amber-900 dark:bg-gray-400' : 'text-gray-900 '
+                                            `relative cursor-default select-none py-2.5 pl-10 pr-4 transition-colors ${
+                                                active ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-300'
                                             }`
                                         }
                                         value={item}
                                     >
                                         {({ selected }) => (
                                             <>
-                                            <span
-                                                className={`block truncate text-orange-900  ${
-                                                    selected ? 'font-medium' : 'font-normal'
-                                                }`}
-                                            >
-                                                {item.title}
-                                            </span>
-
-                                                {selected ? (
-                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-amber-600 ">
-                                                    <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                                                <span className={`block truncate ${selected ? 'font-medium text-orange-400' : 'font-normal'}`}>
+                                                    {item.title}
                                                 </span>
+                                                {selected ? (
+                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-orange-500">
+                                                        <CheckIcon className="h-4 w-4" aria-hidden="true" />
+                                                    </span>
                                                 ) : null}
                                             </>
                                         )}
