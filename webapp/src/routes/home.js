@@ -49,6 +49,15 @@ function FrameStatusCard({ frameId, token, lastImageEvent }) {
     const library = frame.library_display;
     const lastPictureName = lastImageEvent?.picture?.name;
 
+    // Pastille statut basee sur frame.status calcule par l'API
+    const statusMap = {
+        online:  { color: 'bg-emerald-500', label: 'En ligne' },
+        error:   { color: 'bg-red-500',     label: 'Erreur recente' },
+        offline: { color: 'bg-zinc-600',    label: 'Hors ligne' },
+        unknown: { color: 'bg-amber-500',   label: 'Statut inconnu' },
+    };
+    const status = statusMap[frame.status] || statusMap.unknown;
+
     return (
         <div className="shrink-0 w-48 rounded-2xl border border-zinc-800 bg-zinc-900 overflow-hidden flex flex-col">
             {/* Thumbnail */}
@@ -68,7 +77,7 @@ function FrameStatusCard({ frameId, token, lastImageEvent }) {
                     <a href={`/frames/${frame._id.$oid}`} className="font-semibold text-sm text-zinc-100 truncate hover:text-orange-400 transition-colors">
                         {frame.name}
                     </a>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ml-2" title="Actif" />
+                    <span className={`w-2 h-2 rounded-full shrink-0 ml-2 ${status.color}`} title={status.label} />
                 </div>
 
                 {/* Library & delay */}

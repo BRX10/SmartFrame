@@ -3,7 +3,8 @@ from flask_restful import Resource
 from flask import request
 from database.models import Librarys, EventsLog, Frames, Pictures, User
 from mongoengine.errors import FieldDoesNotExist, ValidationError
-from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
+from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError, classify_frame_error
+from datetime import datetime
 from resources.draw_image import convert_image_raspberry
 from slugify import slugify
 import requests
@@ -60,31 +61,24 @@ class Post_To_Frame(Resource):
                     ## Envoie de la requete au client/server
                     payload = {'key': frame.key}
                     file_picture = {"bmp": open(name_file,'rb')}
-                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=30)
+                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=(5, 25))
 
-                    ## On envoie le log 
-                    EventsLog(
-                        type_event = "server",
-                        frame = frame,
-                        library = library,
-                        picture = picture,
-                        is_delete = False
-                    ).save()
+                    ## On envoie le log + statut frame OK
+                    EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
+                    frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow())
 
                 except Exception as e:
-                    EventsLog(
-                        type_event = "server-error",
-                        frame = frame,
-                        library = library,
-                        picture = picture,
-                        is_delete = False
-                    ).save()
-                    os.remove(name_file)
-                    return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
+                    code = classify_frame_error(e)
+                    EventsLog(type_event="server-error", frame=frame, library=library, picture=picture, is_delete=False).save()
+                    frame.update(last_error_at=datetime.utcnow(), last_error_code=code, last_error_message=str(e)[:200])
+                    try: os.remove(name_file)
+                    except: pass
+                    return {'error': {'code': code, 'message': 'Cadre injoignable'}, 'status': 400}, 400
 
                 # Suppresion de l'image tampon
-                os.remove(name_file)
-            
+                try: os.remove(name_file)
+                except: pass
+
             elif frame.type_frame == "e_paper_arduino":
                 try:
                     ## Envoie de la requete au client/server
@@ -96,27 +90,16 @@ class Post_To_Frame(Resource):
                         "filename": str(picture.id),
                         "token": os.getenv("AUTH").replace("Bearer ", "")
                     })
-                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=30)
+                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=(5, 25))
 
-                    ## On envoie le log 
-                    EventsLog(
-                        type_event = "server",
-                        frame = frame,
-                        library = library,
-                        picture = picture,
-                        is_delete = False
-                    ).save()
+                    EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
+                    frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow())
 
                 except Exception as e:
-                    EventsLog(
-                        type_event = "server-error",
-                        frame = frame,
-                        library = library,
-                        picture = picture,
-                        is_delete = False
-                    ).save()
-
-                    return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
+                    code = classify_frame_error(e)
+                    EventsLog(type_event="server-error", frame=frame, library=library, picture=picture, is_delete=False).save()
+                    frame.update(last_error_at=datetime.utcnow(), last_error_code=code, last_error_message=str(e)[:200])
+                    return {'error': {'code': code, 'message': 'Cadre injoignable'}, 'status': 400}, 400
 
 
             return {'success': True, 'status': 200}, 200

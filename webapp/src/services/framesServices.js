@@ -1,6 +1,18 @@
 import moment from "moment-timezone";
 import "moment/locale/fr";
 
+// Mapping des codes d'erreur structures de l'API vers messages user-friendly
+const FRAME_ERROR_MESSAGES = {
+    FRAME_OFFLINE:   "Cadre injoignable — verifiez qu'il est sous tension et connecte",
+    FRAME_TIMEOUT:   "Le cadre met trop de temps a repondre",
+    FRAME_REFUSED:   "Le cadre a refuse la connexion (cle invalide ?)",
+    FRAME_KEY:       "Cle d'authentification du cadre invalide",
+    FRAME_HW:        "L'ecran n'a pas pu etre rafraichi (probleme materiel)",
+    FRAME_UNKNOWN:   "Erreur inconnue avec le cadre",
+    LIBRARY_EMPTY:   "La bibliotheque selectionnee est vide",
+    LIBRARY_MISSING: "Aucune bibliotheque assignee",
+};
+
 export async function GetAllFrames(token) {
     const response = await fetch("/api/frames", {
         method: 'GET',
@@ -116,6 +128,10 @@ export async function EventToFrame(token, idFrame, idLibrary) {
     });
 
     let responseJson = await response.json();
+    // Format structure { error: { code, message } }
+    if (responseJson?.error?.code) {
+        throw { message: FRAME_ERROR_MESSAGES[responseJson.error.code] || responseJson.error.message, code: responseJson.error.code };
+    }
     if (responseJson.message) throw responseJson;
 
     return responseJson;

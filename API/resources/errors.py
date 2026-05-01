@@ -57,6 +57,33 @@ class InvalidHeaderError(Exception):
 class WrongTokenError(Exception):
     pass
 
+
+# ── Erreurs cadre structurees ────────────────────────────────────────────────
+# Codes machine-readable utilises par le frontend pour mapper en messages clairs.
+FRAME_ERROR_CODES = {
+    "FRAME_OFFLINE":   "Le cadre est injoignable sur le reseau",
+    "FRAME_TIMEOUT":   "Le cadre n'a pas repondu dans le temps imparti",
+    "FRAME_REFUSED":   "Le cadre a refuse la connexion",
+    "FRAME_KEY":       "La cle du cadre est invalide",
+    "FRAME_HW":        "Le cadre a recu la commande mais l'ecran n'a pas pu etre mis a jour",
+    "FRAME_UNKNOWN":   "Erreur inconnue lors de la communication avec le cadre",
+    "LIBRARY_EMPTY":   "La bibliotheque ne contient aucune image",
+    "LIBRARY_MISSING": "Aucune bibliotheque assignee a ce cadre",
+}
+
+
+def classify_frame_error(exc):
+    """Mappe une exception requests vers un code d'erreur structure."""
+    import requests
+    if isinstance(exc, requests.exceptions.ConnectTimeout):
+        return "FRAME_OFFLINE"
+    if isinstance(exc, requests.exceptions.ReadTimeout):
+        return "FRAME_TIMEOUT"
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return "FRAME_REFUSED"
+    return "FRAME_UNKNOWN"
+
+
 errors = {
     "InternalServerError": {
         "message": "Quelque chose s'est mal passé",

@@ -32,6 +32,12 @@ class Frames(db.Document):
     is_active = db.BooleanField(required=True, default=True)
     library_display = db.ReferenceField('Librarys')
     orientation = db.StringField(required=True)
+    # Statut runtime — alimentés par /eventtoframe et /heartbeat
+    last_seen_at = db.DateTimeField()         # heartbeat ou ping reussi
+    last_success_at = db.DateTimeField()      # dernier envoi image OK
+    last_error_at = db.DateTimeField()
+    last_error_code = db.StringField()        # FRAME_TIMEOUT, FRAME_REFUSED, FRAME_HW, ...
+    last_error_message = db.StringField()
 
 
 class Librarys(db.Document):
