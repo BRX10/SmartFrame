@@ -85,12 +85,61 @@ Suite à l'audit (pastilles vertes en dur, lenteur affectation biblio, erreurs v
 
 ---
 
+## Session 2026-05-01 (suite) — Réinitialisation Pi & diagnostic final
+
+### 1. Réinitialisation logicielle du Pi
+
+- `sudo git reset --hard origin/main` → commit `1831638` (première version du projet)
+- Dépendances vérifiées (Flask, RPi.GPIO, spidev, Pillow) — toutes déjà installées
+- Service `smart-frame-client.service` arrêté pendant les tests
+
+### 2. Tests hardware séquentiels
+
+**Test BUSY pin** : `GPIO.input(24)` = 0 (stuck busy) au démarrage → confirmé identique à la session précédente.
+
+**Test reset agressif (3 cycles RST pin 17)** :
+- BUSY passe de 0 → 1 après reset ✅
+- Le contrôleur du HAT répond au reset
+
+**Test POWER ON (commande 0x04)** :
+- Envoi direct sans passer par le driver → BUSY retombe à 0 immédiatement ✅
+- Le boost converter du HAT fonctionne (génère la haute tension)
+
+**Test init + clear complet (séquence manuelle)** :
+- Toutes les commandes SPI passent sans erreur ✅ (POWER SETTING, PANEL SETTING, RESOLUTION, VCOM, TCON)
+- 48 000 octets (800×480/8) envoyés via DATA START (0x13) ✅
+- DISPLAY REFRESH (0x12) terminé, BUSY retombe à 0 ✅
+- **Écran ne bouge pas** ❌
+
+### 3. Reseat physique nappe FFC
+
+- Pi éteint proprement (`shutdown -h now`), alimentation débranchée
+- Nappe FFC HAT↔panneau retirée, vérifiée visuellement, réinsérée, loquet refermé
+- Pi redémarré, même test relancé → **écran toujours immobile** ❌
+
+### 4. Diagnostic final
+
+| Composant | État | Preuve |
+|-----------|------|--------|
+| Pi (CPU, OS, GPIO, SPI) | ✅ OK | Toutes les commandes passent |
+| HAT contrôleur | ✅ OK | BUSY répond, POWER ON fonctionne |
+| HAT boost converter | ✅ OK | Commande 0x04 acceptée |
+| Nappe FFC | ❓ Suspecte | Reseat n'a rien changé |
+| Panneau e-paper | ❌ KO | Ne réagit à aucune commande |
+
+**Conclusion** : le panneau Waveshare 7.5" V2 (800×480) est mort ou la nappe FFC a une trace interne cassée. La nappe étant solidaire du panneau sur ce modèle, **le panneau est à remplacer** (~35-50€).
+
+**Code** : tout est propre et fonctionnel, le service redémarrera normalement avec un nouveau panneau.
+
+---
+
 ## Backlog
 
 ### Prioritaire
-- **Reseat nappe FFC HAT↔panneau** (à froid, Pi débranché)
-- Si reseat KO : remplacement HAT ou panneau (Waveshare 7.5" V2 800×480, ~50€)
+- ~~Reseat nappe FFC HAT↔panneau~~ → fait le 2026-05-01, sans effet
+- **Commander panneau Waveshare 7.5" V2 800×480 neuf** (~35-50€, nappe FFC intégrée)
 - Une fois hardware OK : valider la nouvelle UI statut en condition réelle
+- **Déployer les derniers commits sur le VPS** (status refactor + JOURNAL.md — 3 commits sur `scaleway-webapp-v2`)
 
 ### Améliorations identifiées
 - **Heartbeat depuis le Pi** : `POST /api/frame/<id>/heartbeat` toutes les 60s pour alimenter `last_seen_at` (différencier "joignable mais EPD KO" de "complètement injoignable")
