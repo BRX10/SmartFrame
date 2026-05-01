@@ -142,6 +142,12 @@ Suite à l'audit (pastilles vertes en dur, lenteur affectation biblio, erreurs v
 - **Déployer les derniers commits sur le VPS** (status refactor + JOURNAL.md — 3 commits sur `scaleway-webapp-v2`)
 
 ### Améliorations identifiées
+- **Diagnostic hardware avancé** : endpoint ou script de santé qui teste et distingue chaque maillon de la chaîne :
+  - **VPS** : API up, Docker containers running, connectivité Tailscale vers Pi
+  - **Pi** : OS up, service Flask actif, Tailscale connecté, GPIO/SPI accessibles
+  - **HAT** : SPI répond, RST pin fonctionnel, POWER ON (0x04) accepté, BUSY pin réactif
+  - **Nappe + écran** : DISPLAY REFRESH (0x12) terminé ET écran physiquement mis à jour
+  Objectif : pouvoir lancer un `GET /api/diagnostics` ou un script Pi qui retourne l'état de chaque composant avec un verdict clair (OK/KO/UNREACHABLE)
 - **Heartbeat depuis le Pi** : `POST /api/frame/<id>/heartbeat` toutes les 60s pour alimenter `last_seen_at` (différencier "joignable mais EPD KO" de "complètement injoignable")
 - **Édition IP cadre** dans le modal Frame (actuellement il faut passer par MongoDB)
 - **Wizard newFrame** guidé avec auto-détection du Pi sur le réseau

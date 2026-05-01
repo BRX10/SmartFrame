@@ -26,6 +26,7 @@ export async function GetAllFrames(token) {
     
     return responseJson.map( (frame) => {
         return {
+            ...frame,
             idx: frame.idx,
             id: frame._id.$oid,
             title: frame.name,

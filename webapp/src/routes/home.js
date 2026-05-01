@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import moment from "moment-timezone";
 import "moment/locale/fr";
 import { GetEventsLog } from "../services/eventsLogServices";
-import { GetAllFrames, GetFrame, EventToFrame } from "../services/framesServices";
+import { GetAllFrames, EventToFrame } from "../services/framesServices";
 import { GetPictureFile } from "../services/picturesServices";
 import Spinner from "../components/spinner";
 import InfiniteScroll from "react-infinite-scroll-component";
@@ -11,15 +11,11 @@ import { useNavigate } from "react-router-dom";
 
 // ── Frame status card ────────────────────────────────────────────────────────
 
-function FrameStatusCard({ frameId, token, lastImageEvent }) {
-    const [frame, setFrame] = useState(null);
+function FrameStatusCard({ frame: initialFrame, token, lastImageEvent }) {
+    const [frame] = useState(initialFrame);
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
     const [thumbUrl, setThumbUrl] = useState(null);
-
-    useEffect(() => {
-        GetFrame(token, frameId).then(setFrame).catch(() => {});
-    }, [token, frameId]);
 
     useEffect(() => {
         const picId = lastImageEvent?.picture?._id?.$oid;
@@ -185,7 +181,7 @@ export default function Home({ token }) {
     const [error, setError] = useState(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [events, setEvents] = useState([]);
-    const [frameIds, setFrameIds] = useState([]);
+    const [frames, setFrames] = useState([]);
 
     function getData() {
         GetEventsLog(token, pageServer + 1)
@@ -212,14 +208,15 @@ export default function Home({ token }) {
                 if (error.message === "Le token a expiré") setTimeout(() => navigate("/signout", { replace: true }), 300);
             });
 
-        // Load frame IDs for status cards
+        // Load frames for status cards
         GetAllFrames(token)
-            .then(frames => setFrameIds(frames.map(f => f.id)))
+            .then(setFrames)
             .catch(() => {});
     }, [token, navigate]);
 
     // Find last image event per frame (from already-loaded events)
-    function lastImageEventForFrame(frameId) {
+    function lastImageEventForFrame(frame) {
+        const frameId = frame._id?.$oid || frame.id;
         return events.find(e =>
             e.type_event === 'server' &&
             e.frame?._id?.$oid === frameId &&
@@ -234,17 +231,17 @@ export default function Home({ token }) {
         <div className="max-w-4xl mx-auto w-full">
 
             {/* ── Frame status cards ── */}
-            {frameIds.length > 0 && (
+            {frames.length > 0 && (
                 <div className="px-4 pt-4 pb-2">
                     <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Cadres actifs</p>
                     <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1"
                          style={{ scrollbarWidth: 'none' }}>
-                        {frameIds.map(id => (
+                        {frames.map(f => (
                             <FrameStatusCard
-                                key={id}
-                                frameId={id}
+                                key={f.id}
+                                frame={f}
                                 token={token}
-                                lastImageEvent={lastImageEventForFrame(id)}
+                                lastImageEvent={lastImageEventForFrame(f)}
                             />
                         ))}
                     </div>
