@@ -4,7 +4,8 @@ import Alert from "../../components/alert";
 import Input from "../../components/input";
 import {
     DeletePicture,
-    GetPictureFileToFrame
+    GetPictureFileToFrame,
+    PutPicture
 } from "../../services/picturesServices";
 import Spinner from "../../components/spinner";
 import Title from "../../components/title";
@@ -23,7 +24,7 @@ export default function Image(props) {
     const navigate = useNavigate();
 
     const [picture, setPicture] = useState(null);
-    
+
     const [alertModal, setAlertModal] = useState(false);
     const [typeAlertModal, setTypeAlertModal] = useState("");
     const [messageAlertModal, setMessageAlertModal] = useState("");
@@ -33,8 +34,13 @@ export default function Image(props) {
     const [isLoadedPctToFrame, setIsLoadedPctToFrame] = useState(true);
     const [frames, setFrames] = useState([]);
     const [selectedFrame, setSelectedFrame] = useState({ title: "Sélectionner le cadre"});
-    
-    
+
+    // Rename state
+    const [editingName, setEditingName] = useState(false);
+    const [nameInput, setNameInput] = useState("");
+    const [savingName, setSavingName] = useState(false);
+
+
     useEffect(() => {
         GetAllFrames(props.token)
             .then(frames => {
@@ -50,7 +56,7 @@ export default function Image(props) {
                         }
                     }, 300);
                 });
-        
+
         if (props.pictureModal.picture) {
             props.pictureModal.picture
                 .then(pictureLoaded => {
@@ -60,9 +66,13 @@ export default function Image(props) {
                         console.log(error.message);
                     });
         }
-        
+
+        // Reset rename state when modal changes
+        setEditingName(false);
+        setNameInput("");
+
     }, [props.pictureModal, props.token, navigate]);
-    
+
 
     function closeModal() {
         props.closeModal()
@@ -70,6 +80,7 @@ export default function Image(props) {
         setAlertModal(false);
         setSelectedFrame({ title: "Sélectionner le cadre"});
         setPictureToFrameShow(null);
+        setEditingName(false);
     }
 
     function changeSelectedFrame(select) {
@@ -84,7 +95,7 @@ export default function Image(props) {
                 },
                 (error) => {
                     setIsLoadedPctToFrame(true);
-                    
+
                     setTimeout(function() {
                         if (error.message === "Le token a expiré") {
                             navigate("/signout", { replace: true });
@@ -110,13 +121,13 @@ export default function Image(props) {
             .then((_) => {
                     setAlertModal(true);
                     setTypeAlertModal("sucess");
-                    setMessageAlertModal("L'image a bien été changé");
+                    setMessageAlertModal("Image envoyée sur le cadre");
                     setIsLoadedSendModal(true);
                 },
                 (error) => {
                     setAlertModal(true)
                     setTypeAlertModal("error")
-                    setMessageAlertModal("Il y a eu une erreur lors du changement de l'image : " + error.message)
+                    setMessageAlertModal("Erreur : " + error.message)
                     setIsLoadedSendModal(true);
 
                     setTimeout(function() {
@@ -128,6 +139,28 @@ export default function Image(props) {
 
     }
 
+    function saveName() {
+        if (!nameInput.trim()) return;
+        setSavingName(true);
+        setAlertModal(false);
+
+        PutPicture(props.token, props.pictureModal.id, nameInput.trim())
+            .then(() => {
+                setSavingName(false);
+                setEditingName(false);
+                setAlertModal(true);
+                setTypeAlertModal("sucess");
+                setMessageAlertModal("Nom mis à jour");
+                // Update parent data
+                if (props.onRename) props.onRename(props.pictureModal.id, nameInput.trim());
+            }, (error) => {
+                setSavingName(false);
+                setAlertModal(true);
+                setTypeAlertModal("error");
+                setMessageAlertModal("Erreur : " + error.message);
+            });
+    }
+
     function archivePicture (id) {
         setAlertModal(false);
         setIsLoadedSendModal(false);
@@ -136,7 +169,7 @@ export default function Image(props) {
             .then((_) => {
                     setAlertModal(true);
                     setTypeAlertModal("sucess");
-                    setMessageAlertModal("L'image a bien été archivé");
+                    setMessageAlertModal("Image archivée");
                     props.isArchive();
                     setIsLoadedSendModal(true);
 
@@ -149,7 +182,7 @@ export default function Image(props) {
                     setIsLoadedSendModal(true);
                     setAlertModal(true);
                     setTypeAlertModal("error");
-                    setMessageAlertModal("Il y a eu une erreur : " + error.message);
+                    setMessageAlertModal("Erreur : " + error.message);
 
                     setTimeout(function() {
                         if (error.message === "Le token a expiré") {
@@ -184,8 +217,45 @@ export default function Image(props) {
                         as="h3"
                         className="flex justify-between items-center mt-2"
                     >
-                        <Title
-                            title={props.pictureModal.title}/>
+                        {/* Nom editable */}
+                        {editingName ? (
+                            <div className="flex items-center gap-2 flex-1 mr-3">
+                                <input
+                                    type="text"
+                                    value={nameInput}
+                                    onChange={e => setNameInput(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false); }}
+                                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-orange-500"
+                                    autoFocus
+                                />
+                                <button
+                                    onClick={saveName}
+                                    disabled={savingName}
+                                    className="text-xs font-medium px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white disabled:opacity-50 transition-colors"
+                                >
+                                    {savingName ? "…" : "OK"}
+                                </button>
+                                <button
+                                    onClick={() => setEditingName(false)}
+                                    className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 min-w-0">
+                                <Title title={props.pictureModal.title} />
+                                <button
+                                    onClick={() => { setNameInput(props.pictureModal.title || ""); setEditingName(true); }}
+                                    className="shrink-0 text-zinc-500 hover:text-orange-400 transition-colors"
+                                    title="Renommer"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                                        <path d="M13.488 2.513a1.75 1.75 0 00-2.475 0L3.22 10.303a1 1 0 00-.26.443l-.97 3.516a.75.75 0 00.927.927l3.516-.97a1 1 0 00.443-.261l7.79-7.79a1.75 1.75 0 000-2.475l-.18-.18z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        )}
 
                         <ButtonNavigation
                             title="Archiver"
@@ -199,7 +269,7 @@ export default function Image(props) {
                             type="number"
                             value={props.pictureModal.order}
                             disabled={true}/>
-                        
+
                         <div className="flex justify-center">
                             { picture ? (
                                 <img
@@ -238,14 +308,14 @@ export default function Image(props) {
                         className="flex justify-between items-center">
                         <ButtonSimple
                             type="button"
-                            title="Je l'ai Merci!"
+                            title="Fermer"
                             className="mt-3"
                             onClick={closeModal} />
 
                         { pictureToFrameShow ? (
                             <ButtonSimple
                                 type="button"
-                                title="Envoyer l'image sur le cadre"
+                                title="Envoyer →"
                                 className="mt-3"
                                 onClick={eventToFrame} />
                         ) : null}

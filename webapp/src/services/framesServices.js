@@ -5,7 +5,7 @@ import "moment/locale/fr";
 const FRAME_ERROR_MESSAGES = {
     FRAME_OFFLINE:   "Cadre injoignable — verifiez qu'il est sous tension et connecte",
     FRAME_TIMEOUT:   "Le cadre met trop de temps a repondre",
-    FRAME_REFUSED:   "Le cadre a refuse la connexion (cle invalide ?)",
+    FRAME_REFUSED:   "Le cadre a refuse la connexion — verifiez qu'il est allume et sur le reseau",
     FRAME_KEY:       "Cle d'authentification du cadre invalide",
     FRAME_HW:        "L'ecran n'a pas pu etre rafraichi (probleme materiel)",
     FRAME_UNKNOWN:   "Erreur inconnue avec le cadre",
@@ -73,6 +73,26 @@ export async function GetFrame(token, idFrame) {
             'Authorization': 'Bearer ' + token,
         }),
         redirect: 'follow'
+    });
+
+    let responseJson = await response.json();
+    if (responseJson.message) throw responseJson;
+
+    return responseJson;
+}
+
+
+export async function UpdateFrame(token, idFrame, data) {
+    let formdata = new FormData();
+    if (data.name) formdata.append("name", data.name);
+    if (data.ip) formdata.append("ip", data.ip);
+
+    const response = await fetch("/api/frame/"+idFrame, {
+        method: 'PUT',
+        headers: new Headers({
+            'Authorization': 'Bearer ' + token,
+        }),
+        body: formdata
     });
 
     let responseJson = await response.json();

@@ -151,6 +151,18 @@ class FrameAPI(Resource):
 
             put_frame = Frames.objects.get(id=id)
 
+            # Mise a jour des proprietes du cadre (nom, ip)
+            if form.get("name"):
+                put_frame.update(name=form.get("name"))
+            if form.get("ip"):
+                put_frame.update(ip=form.get("ip"))
+
+            # Si pas de changement de bibliotheque, retourner directement
+            if not form.get("idLibrary") and (form.get("name") or form.get("ip")):
+                put_frame.reload()
+                frame_dict = put_frame.to_mongo().to_dict()
+                return Response(dumps(frame_dict), mimetype="application/json", status=200)
+
             if put_frame.library_display:
                 library_old = Librarys.objects.get(id=put_frame.library_display.id)
                 EventsLog(

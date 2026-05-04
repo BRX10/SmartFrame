@@ -79,6 +79,25 @@ export async function GetPictureFileToFrame(token, idPicture, width, height) {
 }
 
 
+export async function PutPicture(token, idPicture, name) {
+    let formdata = new FormData();
+    formdata.append("name", name);
+
+    const response = await fetch("/api/picture/"+idPicture, {
+        method: 'PUT',
+        headers: new Headers({
+            'Authorization': 'Bearer ' + token,
+        }),
+        body: formdata
+    });
+
+    let responseJson = await response.json();
+    if (responseJson.message) throw responseJson;
+
+    return responseJson;
+}
+
+
 export async function DeletePicture(token, idPicture) {
     
     const response = await fetch("/api/picture/"+idPicture, {

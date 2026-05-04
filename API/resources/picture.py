@@ -82,6 +82,28 @@ class PictureAPI(Resource):
             raise InternalServerError
     
     @jwt_required()
+    def put(self, id):
+        try:
+            form = request.form
+            picture = Pictures.objects.get(id=id)
+
+            if form.get("name"):
+                picture.update(name=form.get("name"))
+
+            picture.reload()
+            return Response(picture.to_json(), mimetype="application/json", status=200)
+
+        except (FieldDoesNotExist, ValidationError):
+            raise SchemaValidationError
+
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError
+
+        except Exception as e:
+            print(e)
+            raise InternalServerError
+
+    @jwt_required()
     def delete(self, id):
         try:
             delete_picture = Pictures.objects.get(id=id)

@@ -19,7 +19,8 @@ export async function GetAllLibrarys(token) {
             idx: item.idx,
             id: item._id.$oid,
             title: item.name,
-            subTitle: "Délai: " + item.delay + "min",
+            subTitle: item.picture_count + " image" + (item.picture_count !== 1 ? "s" : "") + " · Délai " + item.delay + "min",
+            pictureCount: item.picture_count,
             date: moment.utc(item.created_at).tz("Europe/Paris").fromNow()
         }
     });

@@ -2,7 +2,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 from bson.json_util import dumps
 from flask import request, Response
-from database.models import Librarys, EventsLog, User
+from database.models import Librarys, EventsLog, User, Pictures
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
 
@@ -153,6 +153,7 @@ class LibrarysAPI(Resource):
                 library_dict = library.to_mongo().to_dict()
                 library_dict['created_at'] = library.created_at.isoformat()
                 library_dict['idx'] = idx+1
+                library_dict['picture_count'] = Pictures.objects(library=library.id, is_active=True).count()
                 librarys_list.append(library_dict)
             
             librarys_json = dumps(librarys_list)

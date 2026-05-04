@@ -37,6 +37,10 @@ export default function Library({ token }) {
     const [delayInput, setDelayInput] = useState("");
     const [savingDelay, setSavingDelay] = useState(false);
 
+    const [editingName, setEditingName] = useState(false);
+    const [nameInput, setNameInput] = useState("");
+    const [savingName, setSavingName] = useState(false);
+
     const [isOpen, setIsOpen] = useState(false);
     const [pictureModal, setPictureModal] = useState({});
 
@@ -108,6 +112,27 @@ export default function Library({ token }) {
             });
     }
 
+    function saveName() {
+        if (!nameInput.trim()) return;
+        setSavingName(true);
+        setAlert(false);
+        PutLibrary(token, params.idLibrary, nameInput.trim(), null, null)
+            .then((lib) => {
+                setLibrary(lib.name);
+                setEditingName(false);
+                setSavingName(false);
+                setAlert(true);
+                setTypeAlert("sucess");
+                setMessageAlert("Nom mis à jour");
+            }, (error) => {
+                setSavingName(false);
+                setAlert(true);
+                setTypeAlert("error");
+                setMessageAlert("Erreur : " + error.message);
+                if (error.message === "Le token a expiré") setTimeout(() => navigate("/signout", { replace: true }), 300);
+            });
+    }
+
     function changeLibrary(selectAction) {
         setAlert(false);
         setAction(selectAction);
@@ -151,6 +176,10 @@ export default function Library({ token }) {
                 closeModal={closeModal}
                 pictureModal={pictureModal}
                 isArchive={() => setIsArchive(!isArchive)}
+                onRename={(id, newName) => {
+                    setPictures(prev => prev.map(p => p.id === id ? { ...p, title: newName } : p));
+                    setPictureModal(prev => prev.id === id ? { ...prev, title: newName } : prev);
+                }}
             />
 
             {/* Header */}
@@ -174,7 +203,45 @@ export default function Library({ token }) {
 
             {/* Library info card */}
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 mb-5">
-                <h2 className="text-lg font-semibold text-zinc-100 mb-3">{library}</h2>
+                {/* Nom editable */}
+                {editingName ? (
+                    <div className="flex items-center gap-2 mb-3">
+                        <input
+                            type="text"
+                            value={nameInput}
+                            onChange={e => setNameInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false); }}
+                            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-lg text-zinc-100 focus:outline-none focus:border-orange-500"
+                            autoFocus
+                        />
+                        <button
+                            onClick={saveName}
+                            disabled={savingName}
+                            className="text-xs font-medium px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white disabled:opacity-50 transition-colors"
+                        >
+                            {savingName ? "…" : "OK"}
+                        </button>
+                        <button
+                            onClick={() => setEditingName(false)}
+                            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                            Annuler
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 mb-3">
+                        <h2 className="text-lg font-semibold text-zinc-100">{library}</h2>
+                        <button
+                            onClick={() => { setNameInput(library); setEditingName(true); }}
+                            className="text-zinc-500 hover:text-orange-400 transition-colors"
+                            title="Renommer"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                                <path d="M13.488 2.513a1.75 1.75 0 00-2.475 0L3.22 10.303a1 1 0 00-.26.443l-.97 3.516a.75.75 0 00.927.927l3.516-.97a1 1 0 00.443-.261l7.79-7.79a1.75 1.75 0 000-2.475l-.18-.18z" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
                 {/* Délai — éditable inline */}
                 <div className="mb-4">
                     <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1.5">Délai entre images</p>
