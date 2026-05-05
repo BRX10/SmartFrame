@@ -5,10 +5,13 @@ from flask_jwt_extended import JWTManager
 from resources.routes import initialize_routes
 from database.db import initialize_db
 from database.models import TokenBlacklisted
+from resources.scheduler import init_scheduler
 from flask_restful import Api
 from resources.errors import errors
 import os
+import logging
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 # Initialisation de l'API
 app = Flask(__name__)
@@ -21,6 +24,9 @@ jwt = JWTManager(app)
 
 initialize_db(app)
 initialize_routes(api, app)
+
+# Demarrage du scheduler de rotation d'images (remplace python-crontab)
+init_scheduler()
 
 
 @jwt.token_in_blocklist_loader

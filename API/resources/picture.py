@@ -10,6 +10,7 @@ from resources.errors import SchemaValidationError, InternalServerError, Expired
 from resources.draw_image import convert_image_arduino
 from werkzeug.utils import secure_filename
 import io
+import logging
 
 
 class PictureAPI(Resource):
@@ -55,7 +56,7 @@ class PictureAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
     @jwt_required()
@@ -78,7 +79,7 @@ class PictureAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
     
     @jwt_required()
@@ -100,7 +101,7 @@ class PictureAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
     @jwt_required()
@@ -132,7 +133,7 @@ class PictureAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
 
@@ -165,7 +166,7 @@ class PictureFileFrameAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
 
@@ -191,7 +192,7 @@ class PictureFileAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
 
@@ -224,5 +225,5 @@ class PicturesAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError

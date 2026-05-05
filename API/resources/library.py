@@ -2,9 +2,11 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 from bson.json_util import dumps
 from flask import request, Response
-from database.models import Librarys, EventsLog, User, Pictures
+from database.models import Librarys, EventsLog, User, Pictures, Frames
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
+from resources.scheduler import schedule_frame
+import logging
 
 
 class New_LibraryAPI(Resource):
@@ -45,7 +47,7 @@ class New_LibraryAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
 
@@ -70,7 +72,7 @@ class LibraryAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
     @jwt_required()
@@ -88,8 +90,14 @@ class LibraryAPI(Resource):
             if form.get("action"):
                 library.update(action=form.get("action"))
 
+            # Si le delay a change, mettre a jour les jobs de rotation des cadres qui utilisent cette biblio
+            if form.get("delay"):
+                new_delay = int(form.get("delay"))
+                affected_frames = Frames.objects(library_display=id, is_active=True)
+                for f in affected_frames:
+                    schedule_frame(str(f.id), id, new_delay)
+
             library = Librarys.objects.get(id=id).to_json()
-            
 
             return Response(library, mimetype="application/json", status=200)
 
@@ -106,7 +114,7 @@ class LibraryAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
     
     @jwt_required()
@@ -138,7 +146,7 @@ class LibraryAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
 
@@ -174,5 +182,5 @@ class LibrarysAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError

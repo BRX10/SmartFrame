@@ -1,5 +1,3 @@
-version: '2'
-
 networks:
   smart-frame:
     driver: bridge
@@ -17,6 +15,12 @@ services:
       MONGODB_PASSWORD: ${MONGODB_PASSWORD}
       MONGODB_DATABASE: ${MONGODB_DATABASE}
       TZ: "Europe/Paris"
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.runCommand('ping').ok", "-u", "${MONGODB_USERNAME}", "-p", "${MONGODB_PASSWORD}", "--authenticationDatabase", "admin"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - smart-frame
 
@@ -32,13 +36,21 @@ services:
     container_name: 'SmartFrame-server_api'
     restart: always
     ports:
-      - '8080:8080'
+      - '0.0.0.0:18080:8080'
     environment:
       DATABASE_URI: mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       PORT: 8080
+      SIGNUP_ENABLED: "false"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8080),3); s.close()"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - smart-frame
 
@@ -50,9 +62,8 @@ services:
     container_name: 'SmartFrame-webapp'
     restart: always
     ports:
-      - '8081:3000'
+      - '127.0.0.1:8081:3000'
     depends_on:
       - api-server
-      - mongodb
     networks:
       - smart-frame

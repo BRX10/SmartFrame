@@ -38,6 +38,7 @@ class Frames(db.Document):
     last_error_at = db.DateTimeField()
     last_error_code = db.StringField()        # FRAME_TIMEOUT, FRAME_REFUSED, FRAME_HW, ...
     last_error_message = db.StringField()
+    last_picture_id = db.StringField()        # ID de la derniere image envoyee
 
 
 class Librarys(db.Document):

@@ -8,15 +8,23 @@ from datetime import datetime
 from resources.draw_image import convert_image_raspberry
 from slugify import slugify
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import random
 import json
 import os
+import time
+import logging
 
+
+
+MAX_RETRIES = 2
+RETRY_DELAY = 5  # secondes entre chaque retry
 
 
 class Post_To_Frame(Resource):
     @jwt_required()
-    def post(self):        
+    def post(self):
         try:
             form = request.form
 
@@ -57,20 +65,29 @@ class Post_To_Frame(Resource):
                 im = convert_image_raspberry(image_read, size_frame)
                 im.save(name_file)
 
-                try:
-                    ## Envoie de la requete au client/server
-                    payload = {'key': frame.key}
-                    file_picture = {"bmp": open(name_file,'rb')}
-                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=(5, 25))
+                last_exception = None
+                for attempt in range(MAX_RETRIES + 1):
+                    try:
+                        ## Envoie de la requete au client/server
+                        payload = {'key': frame.key}
+                        file_picture = {"bmp": open(name_file,'rb')}
+                        requests.post("http://"+frame.ip+"/picture", files=file_picture, data=payload, timeout=(5, 25))
 
-                    ## On envoie le log + statut frame OK
-                    EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
-                    frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow())
+                        ## On envoie le log + statut frame OK
+                        EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
+                        frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id))
+                        last_exception = None
+                        break
 
-                except Exception as e:
-                    code = classify_frame_error(e)
+                    except Exception as e:
+                        last_exception = e
+                        if attempt < MAX_RETRIES:
+                            time.sleep(RETRY_DELAY)
+
+                if last_exception:
+                    code = classify_frame_error(last_exception)
                     EventsLog(type_event="server-error", frame=frame, library=library, picture=picture, is_delete=False).save()
-                    frame.update(last_error_at=datetime.utcnow(), last_error_code=code, last_error_message=str(e)[:200])
+                    frame.update(last_error_at=datetime.utcnow(), last_error_code=code, last_error_message=str(last_exception)[:200])
                     try: os.remove(name_file)
                     except: pass
                     return {'error': {'code': code, 'message': 'Cadre injoignable'}, 'status': 400}, 400
@@ -80,25 +97,34 @@ class Post_To_Frame(Resource):
                 except: pass
 
             elif frame.type_frame == "e_paper_arduino":
-                try:
-                    ## Envoie de la requete au client/server
-                    payload = json.dumps({
-                        "key": frame.key,
-                        "host": os.getenv("HOST_SERVER"),
-                        "port": os.getenv("PORT_SERVER"),
-                        "path": "/api/picturefileframe/" + str(int(frame.resolution_width)) +'/'+ str(int(frame.resolution_height)) +'/',
-                        "filename": str(picture.id),
-                        "token": os.getenv("AUTH").replace("Bearer ", "")
-                    })
-                    requests.post("http://"+frame.ip+"/post", data=payload, timeout=(5, 25))
+                last_exception = None
+                for attempt in range(MAX_RETRIES + 1):
+                    try:
+                        ## Envoie de la requete au client/server
+                        payload = json.dumps({
+                            "key": frame.key,
+                            "host": os.getenv("HOST_SERVER"),
+                            "port": os.getenv("PORT_SERVER"),
+                            "path": "/api/picturefileframe/" + str(int(frame.resolution_width)) +'/'+ str(int(frame.resolution_height)) +'/',
+                            "filename": str(picture.id),
+                            "token": os.getenv("AUTH").replace("Bearer ", "")
+                        })
+                        requests.post("http://"+frame.ip+"/post", data=payload, timeout=(5, 25))
 
-                    EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
-                    frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow())
+                        EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
+                        frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id))
+                        last_exception = None
+                        break
 
-                except Exception as e:
-                    code = classify_frame_error(e)
+                    except Exception as e:
+                        last_exception = e
+                        if attempt < MAX_RETRIES:
+                            time.sleep(RETRY_DELAY)
+
+                if last_exception:
+                    code = classify_frame_error(last_exception)
                     EventsLog(type_event="server-error", frame=frame, library=library, picture=picture, is_delete=False).save()
-                    frame.update(last_error_at=datetime.utcnow(), last_error_code=code, last_error_message=str(e)[:200])
+                    frame.update(last_error_at=datetime.utcnow(), last_error_code=code, last_error_message=str(last_exception)[:200])
                     return {'error': {'code': code, 'message': 'Cadre injoignable'}, 'status': 400}, 400
 
 
@@ -117,7 +143,7 @@ class Post_To_Frame(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
 
@@ -147,7 +173,7 @@ class Post_To_Frame_ImageUser(Resource):
                     file_picture = {"bmp": open(name_file,'rb')}
                     requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=30)
 
-                    ## On envoie le log 
+                    ## On envoie le log
                     EventsLog(
                         type_event = "user",
                         user = User.objects.get(id=get_jwt_identity()),
@@ -156,13 +182,16 @@ class Post_To_Frame_ImageUser(Resource):
                         library = picture.library.id,
                         is_delete = False
                     ).save()
+                    frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id))
 
                 except Exception as e:
-                    os.remove(name_file)
+                    try: os.remove(name_file)
+                    except: pass
                     return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
 
                 # Suppresion de l'image tampon
-                os.remove(name_file)
+                try: os.remove(name_file)
+                except: pass
             
             elif frame.type_frame == "e_paper_arduino":
                 try:
@@ -177,7 +206,7 @@ class Post_To_Frame_ImageUser(Resource):
                     })
                     requests.post("http://"+frame.ip+"/post", data=payload, timeout=30)
 
-                    ## On envoie le log 
+                    ## On envoie le log
                     EventsLog(
                         type_event = "user",
                         user = User.objects.get(id=get_jwt_identity()),
@@ -186,6 +215,7 @@ class Post_To_Frame_ImageUser(Resource):
                         library = picture.library.id,
                         is_delete = False
                     ).save()
+                    frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id))
 
                 except Exception as e:
                     return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
@@ -206,5 +236,5 @@ class Post_To_Frame_ImageUser(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError

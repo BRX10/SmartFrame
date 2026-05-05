@@ -6,6 +6,7 @@ from flask import Response
 from database.models import EventsLog, User, Pictures, Librarys, Frames
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
+import logging
 
 
 class EventsLogAPI(Resource):
@@ -69,5 +70,5 @@ class EventsLogAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError

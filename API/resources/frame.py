@@ -2,33 +2,53 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 from bson.json_util import dumps
 from flask import request, Response
-from database.models import Frames, EventsLog, User, Librarys
+from database.models import Frames, EventsLog, User, Librarys, Pictures
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
-from crontab import CronTab
+from resources.scheduler import schedule_frame, unschedule_frame, get_scheduled_jobs
 from datetime import datetime, timedelta
 import requests
 import os
 import threading
+import logging
 
 
-def compute_frame_status(frame):
-    """Calcule un statut runtime du cadre base sur les timestamps stockes.
-    online   : last_success_at < 5min  ou  last_seen_at < 2min
-    error    : last_error_at plus recent que last_success_at  ET  < 10min
+DEFAULT_TOLERANCE_FACTOR = 1.2
+
+
+def compute_frame_status(frame, tolerance_factor=None):
+    """Calcule un statut runtime du cadre base sur le delay de la bibliotheque active.
+
+    La tolerance est : delay * tolerance_factor (defaut 1.2).
+    Si pas de bibliotheque ou pas de delay, fallback a 60 min * tolerance_factor.
+
+    online   : last_success_at dans la fenetre de tolerance
+    error    : last_error_at plus recent que last_success_at ET dans la fenetre
     offline  : sinon
     unknown  : aucun timestamp
     """
+    if tolerance_factor is None:
+        tolerance_factor = DEFAULT_TOLERANCE_FACTOR
+
     now = datetime.utcnow()
     last_ok = frame.last_success_at
     last_err = frame.last_error_at
     last_seen = frame.last_seen_at
 
+    # Calcul de la fenetre de tolerance basee sur le delay de la biblio active
+    delay_minutes = 60  # fallback
+    try:
+        if frame.library_display and frame.library_display.delay:
+            delay_minutes = int(frame.library_display.delay)
+    except Exception:
+        pass
+    tolerance = timedelta(minutes=int(delay_minutes * tolerance_factor))
+
     if last_seen and (now - last_seen) < timedelta(minutes=2):
         return "online"
-    if last_ok and (now - last_ok) < timedelta(minutes=5):
+    if last_ok and (now - last_ok) <= tolerance:
         return "online"
-    if last_err and (now - last_err) < timedelta(minutes=10):
+    if last_err and (now - last_err) <= tolerance:
         if not last_ok or last_err > last_ok:
             return "error"
     if not (last_ok or last_err or last_seen):
@@ -109,7 +129,7 @@ class New_FrameAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
 
@@ -117,10 +137,11 @@ class FrameAPI(Resource):
     @jwt_required()
     def get(self, id):
         try:
+            tolerance_factor = request.args.get('tolerance_factor', DEFAULT_TOLERANCE_FACTOR, type=float)
             # Récupération de la frame
             frame = Frames.objects.get(id=id)
             frame_dict = frame.to_mongo().to_dict()
-            frame_dict["status"] = compute_frame_status(frame)
+            frame_dict["status"] = compute_frame_status(frame, tolerance_factor)
 
             if frame.library_display:
                 frame_dict["library_display"] = Librarys.objects.get(id=frame.library_display.id).to_mongo().to_dict()
@@ -141,7 +162,7 @@ class FrameAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
     @jwt_required()
@@ -173,13 +194,8 @@ class FrameAPI(Resource):
                     is_delete = True
                 ).save()
 
-
-            cron = CronTab(user='root')
-            # Suppresion du cron si il existe
-            for job in cron:
-                if job.comment == id:
-                    cron.remove(job)
-
+            # Suppression du job de rotation existant
+            unschedule_frame(id)
 
             if form.get("idLibrary") == "disable_library_frame":
                 put_frame.update(unset__library_display=True)
@@ -187,7 +203,7 @@ class FrameAPI(Resource):
                 library_new = Librarys.objects.get(id=form.get("idLibrary"))
                 put_frame.update(library_display=library_new)
 
-                # On envoie le log 
+                # On envoie le log
                 EventsLog(
                     type_event = "user",
                     user = User.objects.get(id=get_jwt_identity()),
@@ -196,9 +212,8 @@ class FrameAPI(Resource):
                     is_delete = False
                 ).save()
 
-                # Ajout du cron
-                job = cron.new(command='python3 /API/resources/cron_post_to_frame.py '+id+' '+form.get("idLibrary")+' '+os.getenv("AUTH"), comment=id)
-                job.minute.every(int(library_new.delay))
+                # Planification de la rotation automatique via APScheduler
+                schedule_frame(id, form.get("idLibrary"), int(library_new.delay))
 
                 # Actualisation du frame en BACKGROUND (n'attend pas la reponse du Pi)
                 threading.Thread(
@@ -206,8 +221,6 @@ class FrameAPI(Resource):
                     args=(id, form.get("idLibrary"), os.getenv("AUTH")),
                     daemon=True
                 ).start()
-
-            cron.write()
 
             return {'success': True}, 200
 
@@ -224,7 +237,7 @@ class FrameAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
     
     @jwt_required()
@@ -244,12 +257,8 @@ class FrameAPI(Resource):
 
             delete_frame.update(is_active=False)
 
-            cron = CronTab(user='root')
-            # Suppression du cron si il existe
-            for job in cron:
-                if job.comment == id:
-                    cron.remove(job)
-            cron.write()
+            # Suppression du job de rotation
+            unschedule_frame(id)
 
             # On envoie le log
             EventsLog(
@@ -274,7 +283,7 @@ class FrameAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
 
@@ -282,6 +291,9 @@ class FramesAPI(Resource):
     @jwt_required()
     def get(self):
         try:
+            # tolerance_factor parametrable via query param (defaut 1.2)
+            tolerance_factor = request.args.get('tolerance_factor', DEFAULT_TOLERANCE_FACTOR, type=float)
+
             # Récupération des frames
             frames = Frames.objects(is_active=True).order_by('-created_at')
 
@@ -290,7 +302,26 @@ class FramesAPI(Resource):
                 frame_dict = frame.to_mongo().to_dict()
                 frame_dict['created_at'] = frame.created_at.isoformat()
                 frame_dict['idx'] = idx+1
-                frame_dict['status'] = compute_frame_status(frame)
+                frame_dict['status'] = compute_frame_status(frame, tolerance_factor)
+
+                # Statistiques d'erreur des dernieres 24h (V2-09c)
+                since_24h = datetime.utcnow() - timedelta(hours=24)
+                error_count = EventsLog.objects(frame=frame.id, type_event="server-error", created_at__gte=since_24h).count()
+                success_count = EventsLog.objects(frame=frame.id, type_event="server", created_at__gte=since_24h).count()
+                total = error_count + success_count
+                frame_dict['error_count_24h'] = error_count
+                frame_dict['success_rate_24h'] = round(success_count / total * 100, 1) if total > 0 else None
+
+                # Image actuellement affichee (V2-13)
+                if frame.last_picture_id:
+                    try:
+                        pic = Pictures.objects.get(id=frame.last_picture_id)
+                        frame_dict['current_picture'] = {
+                            'id': str(pic.id),
+                            'name': pic.name,
+                        }
+                    except Exception:
+                        frame_dict['current_picture'] = None
 
                 if frame.library_display:
                     frame_dict['library_display'] = Librarys.objects.get(id=frame.library_display.id).to_mongo().to_dict()
@@ -315,5 +346,11 @@ class FramesAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
+
+class SchedulerAPI(Resource):
+    """Endpoint debug pour voir les jobs de rotation planifies."""
+    @jwt_required()
+    def get(self):
+        return {'jobs': get_scheduled_jobs()}, 200

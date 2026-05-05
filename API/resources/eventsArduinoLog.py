@@ -5,6 +5,7 @@ from flask_jwt_extended import jwt_required
 from flask import request, Response
 from flask_restful import Resource
 from bson.json_util import dumps
+import logging
 
 
 class EventsArduinoLogAPI(Resource):
@@ -37,7 +38,7 @@ class EventsArduinoLogAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
 
 
@@ -80,5 +81,5 @@ class EventsArduinoLogPaginateAPI(Resource):
             raise ExpiredSignatureError
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             raise InternalServerError
