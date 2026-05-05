@@ -44,17 +44,26 @@ def schedule_frame(frame_id, library_id, delay_minutes):
     if scheduler.get_job(job_id):
         scheduler.remove_job(job_id)
 
-    delay = max(1, int(delay_minutes))
+    # delay_minutes peut etre en secondes (valeur historique MongoDB) — on detecte et convertit
+    # Heuristique : si > 300, c'est probablement en secondes
+    delay_val = max(1, int(delay_minutes))
+    if delay_val > 300:
+        delay_seconds = delay_val
+        delay_min = max(1, delay_val // 60)
+    else:
+        delay_seconds = delay_val * 60
+        delay_min = delay_val
+
     scheduler.add_job(
         _send_image_to_frame,
-        trigger=IntervalTrigger(minutes=delay),
+        trigger=IntervalTrigger(minutes=delay_min),
         args=[str(frame_id), str(library_id)],
         id=job_id,
         name=f"Rotation cadre {frame_id}",
         replace_existing=True,
-        misfire_grace_time=60
+        misfire_grace_time=120
     )
-    logger.info(f"[SCHEDULER] Job programme: frame={frame_id} toutes les {delay}min")
+    logger.info(f"[SCHEDULER] Job programme: frame={frame_id} toutes les {delay_min}min (raw delay={delay_val})")
 
 
 def unschedule_frame(frame_id):

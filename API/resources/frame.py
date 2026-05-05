@@ -36,12 +36,15 @@ def compute_frame_status(frame, tolerance_factor=None):
     last_seen = frame.last_seen_at
 
     # Calcul de la fenetre de tolerance basee sur le delay de la biblio active
-    delay_minutes = 60  # fallback
+    # Note : delay en DB peut etre en secondes (>300) ou en minutes (<= 300)
+    delay_raw = 60  # fallback en minutes
     try:
         if frame.library_display and frame.library_display.delay:
-            delay_minutes = int(frame.library_display.delay)
+            delay_raw = int(frame.library_display.delay)
     except Exception:
         pass
+    delay_minutes = delay_raw // 60 if delay_raw > 300 else delay_raw
+    delay_minutes = max(1, delay_minutes)
     tolerance = timedelta(minutes=int(delay_minutes * tolerance_factor))
 
     if last_seen and (now - last_seen) < timedelta(minutes=2):
