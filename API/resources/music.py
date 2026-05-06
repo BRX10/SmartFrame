@@ -3,6 +3,7 @@
 POST /api/frame/<id>/music  — recoit les metadonnees du morceau en cours,
                                genere l'image e-paper et l'envoie au cadre.
 DELETE /api/frame/<id>/music — fin de musique, retour a la bibliotheque active.
+GET /api/frame/<id>/music   — retourne la config musique du cadre (pour le Pi).
 
 Le Pi (ou tout client) n'a qu'a relayer les metadonnees Chromecast.
 Tout le rendu est fait cote serveur.
@@ -11,16 +12,16 @@ Tout le rendu est fait cote serveur.
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource
 from flask import request
-from database.models import Frames, EventsLog
+from database.models import Frames
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
-from resources.music_renderer import render_now_playing, render_now_playing_portrait
+from resources.music_renderer import render_now_playing
+from resources.music_masks import get_mask_ids
 from resources.draw_image import convert_image_raspberry
 from slugify import slugify
 from datetime import datetime
 import requests as http_requests
 import logging
-import json
 import os
 import io
 
@@ -28,6 +29,23 @@ logger = logging.getLogger(__name__)
 
 
 class FrameMusicAPI(Resource):
+
+    @jwt_required()
+    def get(self, id):
+        """Retourne la config musique du cadre (pour le listener Pi)."""
+        try:
+            frame = Frames.objects.get(id=id)
+            return {
+                "music_mode_enabled": frame.music_mode_enabled or False,
+                "music_idle_timeout": frame.music_idle_timeout or 120,
+                "music_mask": frame.music_mask or "poster",
+                "available_masks": get_mask_ids()
+            }, 200
+        except Frames.DoesNotExist:
+            return {"message": "Cadre introuvable"}, 404
+        except Exception as e:
+            logging.exception(e)
+            raise InternalServerError
 
     @jwt_required()
     def post(self, id):
@@ -41,6 +59,12 @@ class FrameMusicAPI(Resource):
             state (str, optionnel): PLAYING, PAUSED, IDLE
         """
         try:
+            frame = Frames.objects.get(id=id)
+
+            # Verifier que le mode musique est active
+            if not frame.music_mode_enabled:
+                return {"message": "Mode musique desactive pour ce cadre"}, 403
+
             # Accepter JSON ou FormData
             if request.is_json:
                 data = request.get_json()
@@ -60,23 +84,16 @@ class FrameMusicAPI(Resource):
             if state == "IDLE":
                 return self._restore_library(id)
 
-            # Recuperer le cadre
-            frame = Frames.objects.get(id=id)
             size_frame = (int(frame.resolution_width), int(frame.resolution_height))
 
-            # Generer l'image selon l'orientation
-            if frame.orientation == "portrait":
-                img = render_now_playing_portrait(
-                    title, artist, album, artwork_url,
-                    width=size_frame[0], height=size_frame[1]
-                )
-            else:
-                img = render_now_playing(
-                    title, artist, album, artwork_url,
-                    width=size_frame[0], height=size_frame[1]
-                )
+            # Generer l'image via le dispatcher (masque + orientation auto)
+            img = render_now_playing(
+                title, artist, album, artwork_url,
+                width=size_frame[0], height=size_frame[1],
+                mask=frame.music_mask or "poster"
+            )
 
-            # Convertir pour e-paper (grayscale + RGB)
+            # Convertir pour e-paper
             img_bytes = io.BytesIO()
             img.save(img_bytes, format='BMP')
             img_bytes.seek(0)
@@ -99,7 +116,7 @@ class FrameMusicAPI(Resource):
                         last_success_at=datetime.utcnow(),
                         last_seen_at=datetime.utcnow()
                     )
-                    logger.info(f"[MUSIC] Now playing: {artist} — {title} → {frame.name}")
+                    logger.info(f"[MUSIC] Now playing: {artist} — {title} → {frame.name} (mask={frame.music_mask})")
                 except Exception as e:
                     logger.warning(f"[MUSIC] Erreur envoi cadre: {e}")
                     try: os.remove(name_file)
@@ -107,10 +124,7 @@ class FrameMusicAPI(Resource):
                     return {"message": "Cadre injoignable"}, 400
 
             elif frame.type_frame == "e_paper_arduino":
-                # Pour Arduino, on ne peut pas envoyer un BMP genere a la volee
-                # car le protocole attend une image stockee en GridFS.
-                # On pourrait stocker temporairement — a voir en V2.
-                logger.warning("[MUSIC] Mode musique non supporte pour Arduino (pas de GridFS temp)")
+                logger.warning("[MUSIC] Mode musique non supporte pour Arduino")
                 try: os.remove(name_file)
                 except: pass
                 return {"message": "Mode musique non supporte pour ce type de cadre"}, 400
@@ -124,7 +138,8 @@ class FrameMusicAPI(Resource):
                     "title": title,
                     "artist": artist,
                     "album": album,
-                    "state": state
+                    "state": state,
+                    "mask": frame.music_mask or "poster"
                 }
             }, 200
 

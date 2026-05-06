@@ -32,6 +32,13 @@ export default function Frame(props) {
     const [fieldInput, setFieldInput] = useState("");
     const [savingField, setSavingField] = useState(false);
 
+    // Music mode states
+    const [musicEnabled, setMusicEnabled] = useState(false);
+    const [musicTimeout, setMusicTimeout] = useState(120);
+    const [musicMask, setMusicMask] = useState("poster");
+    const [availableMasks, setAvailableMasks] = useState([]);
+    const [savingMusic, setSavingMusic] = useState(false);
+
     useEffect(() => {
         if (props.isOpen) {
             setConfirmDelete(false);
@@ -40,6 +47,10 @@ export default function Frame(props) {
                 .then(frame => {
                     setFrameModal(frame);
                     setIsLoadedModal(true);
+                    setMusicEnabled(frame.music_mode_enabled || false);
+                    setMusicTimeout(frame.music_idle_timeout || 120);
+                    setMusicMask(frame.music_mask || "poster");
+                    setAvailableMasks(frame.available_masks || ["poster", "minimal", "fullart"]);
                     if (frame.library_display) {
                         setSelected(props.librarys.find(l => l.id === frame.library_display._id.$oid) || { title: "Sélectionner la bibliothèque" });
                     }
@@ -94,6 +105,42 @@ export default function Frame(props) {
                 setMessageAlertModal("Erreur : " + error.message);
                 if (error.message === "Le token a expiré") setTimeout(() => navigate("/signout", { replace: true }), 300);
             });
+    }
+
+    function saveMusicSetting(field, value) {
+        setSavingMusic(true);
+        setAlertModal(false);
+        const data = { [field]: String(value) };
+        UpdateFrame(props.token, frameModal._id.$oid, data)
+            .then(() => {
+                setSavingMusic(false);
+                setAlertModal(true);
+                setTypeAlertModal("sucess");
+                setMessageAlertModal("Paramètre musique mis à jour");
+                if (props.onUpdate) props.onUpdate();
+            }, (error) => {
+                setSavingMusic(false);
+                setAlertModal(true);
+                setTypeAlertModal("error");
+                setMessageAlertModal("Erreur : " + error.message);
+            });
+    }
+
+    function toggleMusic() {
+        const newVal = !musicEnabled;
+        setMusicEnabled(newVal);
+        saveMusicSetting("music_mode_enabled", newVal);
+    }
+
+    function changeMask(mask) {
+        setMusicMask(mask);
+        saveMusicSetting("music_mask", mask);
+    }
+
+    function changeTimeout(val) {
+        const clamped = Math.max(30, Math.min(600, parseInt(val) || 120));
+        setMusicTimeout(clamped);
+        saveMusicSetting("music_idle_timeout", clamped);
     }
 
     function changeSelectedLibrary(idFrame, selectdLibrary) {
@@ -254,6 +301,81 @@ export default function Frame(props) {
                         <InfoRow label="Type" value={ConvertKeyToStringType(frameModal.type_frame)} />
                         <InfoRow label="Écran" value={`${frameModal.inch}" — ${frameModal.resolution_width}×${frameModal.resolution_height}`} />
                         <InfoRow label="Orientation" value={ConvertKeyToStringOrientation(frameModal.orientation)} />
+                    </div>
+
+                    {/* Mode Musique (V4-E) */}
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-800/50 p-4 mb-5">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm">♪</span>
+                                <span className="text-xs text-zinc-400 uppercase tracking-wider font-medium">Mode Musique</span>
+                            </div>
+                            <button
+                                onClick={toggleMusic}
+                                disabled={savingMusic}
+                                className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${musicEnabled ? 'bg-orange-500' : 'bg-zinc-700'} disabled:opacity-50`}
+                            >
+                                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${musicEnabled ? 'left-5' : 'left-0.5'}`} />
+                            </button>
+                        </div>
+
+                        {musicEnabled && (
+                            <div className="space-y-3 pt-1">
+                                {/* Délai retour photos */}
+                                <div>
+                                    <label className="text-xs text-zinc-500 block mb-1">Délai retour photos</label>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="range"
+                                            min="30"
+                                            max="600"
+                                            step="30"
+                                            value={musicTimeout}
+                                            onChange={e => setMusicTimeout(parseInt(e.target.value))}
+                                            onMouseUp={e => changeTimeout(e.target.value)}
+                                            onTouchEnd={e => changeTimeout(e.target.value)}
+                                            className="flex-1 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                                        />
+                                        <span className="text-xs text-zinc-300 font-medium w-12 text-right">
+                                            {musicTimeout >= 60 ? `${Math.round(musicTimeout / 60)} min` : `${musicTimeout}s`}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Sélecteur de masque */}
+                                <div>
+                                    <label className="text-xs text-zinc-500 block mb-2">Style d'affichage</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {availableMasks.map(mask => (
+                                            <button
+                                                key={mask}
+                                                onClick={() => changeMask(mask)}
+                                                disabled={savingMusic}
+                                                className={`relative rounded-lg border-2 p-2 transition-all text-center ${
+                                                    musicMask === mask
+                                                        ? 'border-orange-500 bg-orange-500/10'
+                                                        : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                                                } disabled:opacity-50`}
+                                            >
+                                                <div className="text-lg mb-0.5">
+                                                    {mask === 'poster' && '🖼️'}
+                                                    {mask === 'minimal' && '◻️'}
+                                                    {mask === 'fullart' && '🎨'}
+                                                </div>
+                                                <span className="text-[10px] text-zinc-400 capitalize">{mask}</span>
+                                                {musicMask === mask && (
+                                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="white" className="w-2 h-2">
+                                                            <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 01.208 1.04l-5 7.5a.75.75 0 01-1.154.114l-3-3a.75.75 0 011.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 011.04-.207z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Danger zone */}

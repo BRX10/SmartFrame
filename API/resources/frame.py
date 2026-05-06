@@ -6,6 +6,7 @@ from database.models import Frames, EventsLog, User, Librarys, Pictures
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
 from resources.scheduler import schedule_frame, unschedule_frame, get_scheduled_jobs
+from resources.music_masks import get_mask_ids
 from datetime import datetime, timedelta
 import requests
 import os
@@ -146,6 +147,12 @@ class FrameAPI(Resource):
             frame_dict = frame.to_mongo().to_dict()
             frame_dict["status"] = compute_frame_status(frame, tolerance_factor)
 
+            # Config musique (V4-E)
+            frame_dict['music_mode_enabled'] = frame.music_mode_enabled or False
+            frame_dict['music_idle_timeout'] = frame.music_idle_timeout or 120
+            frame_dict['music_mask'] = frame.music_mask or "poster"
+            frame_dict['available_masks'] = get_mask_ids()
+
             if frame.library_display:
                 frame_dict["library_display"] = Librarys.objects.get(id=frame.library_display.id).to_mongo().to_dict()
 
@@ -175,11 +182,23 @@ class FrameAPI(Resource):
 
             put_frame = Frames.objects.get(id=id)
 
-            # Mise a jour des proprietes du cadre (nom, ip)
+            # Mise a jour des proprietes du cadre (nom, ip, musique)
             if form.get("name"):
                 put_frame.update(name=form.get("name"))
             if form.get("ip"):
                 put_frame.update(ip=form.get("ip"))
+
+            # Champs mode musique (V4-E)
+            if "music_mode_enabled" in form:
+                val = form.get("music_mode_enabled", "").lower() in ("true", "1", "yes")
+                put_frame.update(music_mode_enabled=val)
+            if form.get("music_idle_timeout"):
+                timeout = max(30, min(600, int(form.get("music_idle_timeout"))))
+                put_frame.update(music_idle_timeout=timeout)
+            if form.get("music_mask"):
+                mask = form.get("music_mask")
+                if mask in get_mask_ids():
+                    put_frame.update(music_mask=mask)
 
             # Si pas de changement de bibliotheque, retourner directement
             if not form.get("idLibrary") and (form.get("name") or form.get("ip")):
@@ -325,6 +344,11 @@ class FramesAPI(Resource):
                         }
                     except Exception:
                         frame_dict['current_picture'] = None
+
+                # Config musique (V4-E)
+                frame_dict['music_mode_enabled'] = frame.music_mode_enabled or False
+                frame_dict['music_idle_timeout'] = frame.music_idle_timeout or 120
+                frame_dict['music_mask'] = frame.music_mask or "poster"
 
                 if frame.library_display:
                     frame_dict['library_display'] = Librarys.objects.get(id=frame.library_display.id).to_mongo().to_dict()

@@ -84,8 +84,9 @@ export async function GetFrame(token, idFrame) {
 
 export async function UpdateFrame(token, idFrame, data) {
     let formdata = new FormData();
-    if (data.name) formdata.append("name", data.name);
-    if (data.ip) formdata.append("ip", data.ip);
+    Object.entries(data).forEach(([key, val]) => {
+        if (val !== undefined && val !== null) formdata.append(key, val);
+    });
 
     const response = await fetch("/api/frame/"+idFrame, {
         method: 'PUT',

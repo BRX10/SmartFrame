@@ -39,6 +39,10 @@ class Frames(db.Document):
     last_error_code = db.StringField()        # FRAME_TIMEOUT, FRAME_REFUSED, FRAME_HW, ...
     last_error_message = db.StringField()
     last_picture_id = db.StringField()        # ID de la derniere image envoyee
+    # Mode musique (V4-E)
+    music_mode_enabled = db.BooleanField(default=False)
+    music_idle_timeout = db.IntField(default=120)   # secondes avant retour photo
+    music_mask = db.StringField(default="poster")   # masque visuel Now Playing
 
 
 class Librarys(db.Document):
