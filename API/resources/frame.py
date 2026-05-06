@@ -201,7 +201,7 @@ class FrameAPI(Resource):
                     put_frame.update(music_mask=mask)
 
             # Si pas de changement de bibliotheque, retourner directement
-            if not form.get("idLibrary") and (form.get("name") or form.get("ip")):
+            if not form.get("idLibrary"):
                 put_frame.reload()
                 frame_dict = put_frame.to_mongo().to_dict()
                 return Response(dumps(frame_dict), mimetype="application/json", status=200)
