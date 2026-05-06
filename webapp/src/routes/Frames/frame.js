@@ -37,6 +37,7 @@ export default function Frame(props) {
     const [musicTimeout, setMusicTimeout] = useState(120);
     const [musicMask, setMusicMask] = useState("poster");
     const [availableMasks, setAvailableMasks] = useState([]);
+    const [musicChromecast, setMusicChromecast] = useState("");
     const [savingMusic, setSavingMusic] = useState(false);
 
     useEffect(() => {
@@ -51,6 +52,7 @@ export default function Frame(props) {
                     setMusicTimeout(frame.music_idle_timeout || 120);
                     setMusicMask(frame.music_mask || "poster");
                     setAvailableMasks(frame.available_masks || ["poster", "minimal", "fullart"]);
+                    setMusicChromecast(frame.music_chromecast_name || "");
                     if (frame.library_display) {
                         setSelected(props.librarys.find(l => l.id === frame.library_display._id.$oid) || { title: "Sélectionner la bibliothèque" });
                     }
@@ -373,6 +375,26 @@ export default function Frame(props) {
                                             </button>
                                         ))}
                                     </div>
+                                </div>
+                                {/* Nom du Chromecast */}
+                                <div>
+                                    <label className="text-xs text-zinc-500 block mb-1">Enceinte Chromecast</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            value={musicChromecast}
+                                            onChange={e => setMusicChromecast(e.target.value)}
+                                            onBlur={e => {
+                                                if (e.target.value !== (frameModal.music_chromecast_name || "")) {
+                                                    saveMusicSetting("music_chromecast_name", e.target.value);
+                                                }
+                                            }}
+                                            onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+                                            placeholder="Ex : Nest Mini salon"
+                                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-zinc-600 mt-1">Nom exact tel qu'il apparaît dans Google Home (ou nom du groupe)</p>
                                 </div>
                             </div>
                         )}

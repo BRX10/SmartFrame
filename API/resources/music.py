@@ -39,6 +39,7 @@ class FrameMusicAPI(Resource):
                 "music_mode_enabled": frame.music_mode_enabled or False,
                 "music_idle_timeout": frame.music_idle_timeout or 120,
                 "music_mask": frame.music_mask or "poster",
+                "music_chromecast_name": frame.music_chromecast_name or "",
                 "available_masks": get_mask_ids()
             }, 200
         except Frames.DoesNotExist:

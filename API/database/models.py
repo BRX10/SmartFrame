@@ -43,6 +43,7 @@ class Frames(db.Document):
     music_mode_enabled = db.BooleanField(default=False)
     music_idle_timeout = db.IntField(default=120)   # secondes avant retour photo
     music_mask = db.StringField(default="poster")   # masque visuel Now Playing
+    music_chromecast_name = db.StringField()        # nom du Chromecast a ecouter (ex: "Nest Mini salon")
 
 
 class Librarys(db.Document):

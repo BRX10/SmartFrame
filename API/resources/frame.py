@@ -151,6 +151,7 @@ class FrameAPI(Resource):
             frame_dict['music_mode_enabled'] = frame.music_mode_enabled or False
             frame_dict['music_idle_timeout'] = frame.music_idle_timeout or 120
             frame_dict['music_mask'] = frame.music_mask or "poster"
+            frame_dict['music_chromecast_name'] = frame.music_chromecast_name or ""
             frame_dict['available_masks'] = get_mask_ids()
 
             if frame.library_display:
@@ -199,6 +200,8 @@ class FrameAPI(Resource):
                 mask = form.get("music_mask")
                 if mask in get_mask_ids():
                     put_frame.update(music_mask=mask)
+            if form.get("music_chromecast_name"):
+                put_frame.update(music_chromecast_name=form.get("music_chromecast_name").strip())
 
             # Si pas de changement de bibliotheque, retourner directement
             if not form.get("idLibrary"):
@@ -349,6 +352,7 @@ class FramesAPI(Resource):
                 frame_dict['music_mode_enabled'] = frame.music_mode_enabled or False
                 frame_dict['music_idle_timeout'] = frame.music_idle_timeout or 120
                 frame_dict['music_mask'] = frame.music_mask or "poster"
+                frame_dict['music_chromecast_name'] = frame.music_chromecast_name or ""
 
                 if frame.library_display:
                     frame_dict['library_display'] = Librarys.objects.get(id=frame.library_display.id).to_mongo().to_dict()
