@@ -22,6 +22,7 @@ export async function GetAllPictureLibrary(token, idLibrary) {
             title: item.name,
             fileName: item.file_name,
             order: item.order,
+            displayCount: item.display_count || 0,
             subTitle: "Ordre : " + item.order + " - " + item.file_name,
             date: moment.utc(item.created_at).tz("Europe/Paris").fromNow()
         }

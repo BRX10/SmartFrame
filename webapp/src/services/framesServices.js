@@ -156,6 +156,7 @@ export async function EventToFrame(token, idFrame, idLibrary) {
     }
     if (responseJson.message) throw responseJson;
 
+    // Enriched payload: { success, last_picture_id, last_picture_name, status }
     return responseJson;
 }
 

@@ -1,0 +1,23 @@
+[Unit]
+Description=SmartFrame Music Listener (Chromecast → e-paper)
+After=network-online.target avahi-daemon.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/smartframe
+ExecStart=/usr/bin/python3 /home/pi/smartframe/smartframe_music_listener.py
+EnvironmentFile=/home/pi/smartframe/.env
+Restart=on-failure
+RestartSec=15
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# Logs
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=smartframe-music
+
+[Install]
+WantedBy=multi-user.target

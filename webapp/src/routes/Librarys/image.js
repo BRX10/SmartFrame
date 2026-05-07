@@ -263,12 +263,23 @@ export default function Image(props) {
                     </Dialog.Title>
                     <div className="mt-9 mb-5">
 
-                        <Input
-                            title="Ordre"
-                            name="delay"
-                            type="number"
-                            value={props.pictureModal.order}
-                            disabled={true}/>
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <Input
+                                    title="Ordre"
+                                    name="delay"
+                                    type="number"
+                                    value={props.pictureModal.order}
+                                    disabled={true}/>
+                            </div>
+                            {props.pictureModal.displayCount > 0 && (
+                                <div className="flex items-end pb-2">
+                                    <span className="text-xs text-zinc-500">
+                                        Affichée <span className="text-zinc-300 font-medium">{props.pictureModal.displayCount}×</span>
+                                    </span>
+                                </div>
+                            )}
+                        </div>
 
                         <div className="flex justify-center">
                             { picture ? (

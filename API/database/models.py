@@ -62,6 +62,7 @@ class Pictures(db.Document):
     file_name = db.StringField()
     file = db.FileField(required=True)
     is_active = db.BooleanField(required=True, default=True)
+    display_count = db.IntField(default=0)
 
 
 class EventsLog(db.Document):

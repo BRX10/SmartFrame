@@ -11,28 +11,40 @@ import { useNavigate } from "react-router-dom";
 
 // ── Frame status card ────────────────────────────────────────────────────────
 
-function FrameStatusCard({ frame: initialFrame, token, lastImageEvent }) {
-    const [frame] = useState(initialFrame);
+function FrameStatusCard({ frame, token, onRefreshSuccess }) {
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
     const [thumbUrl, setThumbUrl] = useState(null);
 
+    // Thumbnail from current_picture (enriched by API frames list)
     useEffect(() => {
-        const picId = lastImageEvent?.picture?._id?.$oid;
+        const picId = frame?.current_picture?.id || frame?.last_picture_id;
         if (!picId) return;
         let alive = true;
         GetPictureFile(token, picId)
             .then(blob => { if (alive) setThumbUrl(URL.createObjectURL(blob)); })
             .catch(() => {});
         return () => { alive = false; };
-    }, [token, lastImageEvent]);
+    }, [token, frame?.current_picture?.id, frame?.last_picture_id]);
 
     function refresh() {
         if (!frame?.library_display) return;
         setSending(true);
         setSent(false);
         EventToFrame(token, frame._id.$oid, frame.library_display._id.$oid)
-            .then(() => { setSending(false); setSent(true); setTimeout(() => setSent(false), 3000); })
+            .then((res) => {
+                setSending(false);
+                setSent(true);
+                setTimeout(() => setSent(false), 3000);
+                // Re-fetch frames to update thumbnail & status
+                if (onRefreshSuccess) onRefreshSuccess();
+                // Immediate thumbnail update from enriched response
+                if (res?.last_picture_id) {
+                    GetPictureFile(token, res.last_picture_id)
+                        .then(blob => setThumbUrl(URL.createObjectURL(blob)))
+                        .catch(() => {});
+                }
+            })
             .catch(() => setSending(false));
     }
 
@@ -43,7 +55,6 @@ function FrameStatusCard({ frame: initialFrame, token, lastImageEvent }) {
     );
 
     const library = frame.library_display;
-    const lastPictureName = lastImageEvent?.picture?.name;
 
     // Pastille statut basee sur frame.status calcule par l'API
     const statusMap = {
@@ -91,9 +102,9 @@ function FrameStatusCard({ frame: initialFrame, token, lastImageEvent }) {
                 )}
 
                 {/* Last image name */}
-                {lastPictureName && (
+                {frame.current_picture?.name && (
                     <p className="text-[10px] text-zinc-600 truncate">
-                        <span className="text-zinc-500">{lastPictureName}</span>
+                        <span className="text-zinc-500">{frame.current_picture.name}</span>
                     </p>
                 )}
 
@@ -214,14 +225,9 @@ export default function Home({ token }) {
             .catch(() => {});
     }, [token, navigate]);
 
-    // Find last image event per frame (from already-loaded events)
-    function lastImageEventForFrame(frame) {
-        const frameId = frame._id?.$oid || frame.id;
-        return events.find(e =>
-            e.type_event === 'server' &&
-            e.frame?._id?.$oid === frameId &&
-            e.picture
-        ) || null;
+    // Re-fetch frames after a successful refresh to update thumbnails & status
+    function refreshFrames() {
+        GetAllFrames(token).then(setFrames).catch(() => {});
     }
 
     if (error) return <div className="p-6 text-red-400 text-sm">Erreur : {error.message}</div>;
@@ -241,7 +247,7 @@ export default function Home({ token }) {
                                 key={f.id}
                                 frame={f}
                                 token={token}
-                                lastImageEvent={lastImageEventForFrame(f)}
+                                onRefreshSuccess={refreshFrames}
                             />
                         ))}
                     </div>

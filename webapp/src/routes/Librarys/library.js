@@ -320,7 +320,7 @@ export default function Library({ token }) {
                             image={post.picture}
                             key={post.idx}
                             title={post.title}
-                            list={[post.date]}
+                            list={[post.date, post.displayCount > 0 ? `${post.displayCount}×` : null].filter(Boolean)}
                             isClick={true}
                             onClick={() => openModal(post.id, pictures)}
                             gridMode={true}

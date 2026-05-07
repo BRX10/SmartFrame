@@ -73,9 +73,10 @@ class Post_To_Frame(Resource):
                         file_picture = {"bmp": open(name_file,'rb')}
                         requests.post("http://"+frame.ip+"/picture", files=file_picture, data=payload, timeout=(5, 25))
 
-                        ## On envoie le log + statut frame OK
+                        ## On envoie le log + statut frame OK + compteur affichage
                         EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
                         frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id))
+                        picture.update(inc__display_count=1)
                         last_exception = None
                         break
 
@@ -113,6 +114,7 @@ class Post_To_Frame(Resource):
 
                         EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
                         frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id))
+                        picture.update(inc__display_count=1)
                         last_exception = None
                         break
 
@@ -128,7 +130,7 @@ class Post_To_Frame(Resource):
                     return {'error': {'code': code, 'message': 'Cadre injoignable'}, 'status': 400}, 400
 
 
-            return {'success': True, 'status': 200}, 200
+            return {'success': True, 'last_picture_id': str(picture.id), 'last_picture_name': picture.name, 'status': 200}, 200
 
         except (FieldDoesNotExist, ValidationError):
             raise SchemaValidationError
@@ -173,7 +175,7 @@ class Post_To_Frame_ImageUser(Resource):
                     file_picture = {"bmp": open(name_file,'rb')}
                     requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=30)
 
-                    ## On envoie le log
+                    ## On envoie le log + compteur affichage
                     EventsLog(
                         type_event = "user",
                         user = User.objects.get(id=get_jwt_identity()),
@@ -183,6 +185,7 @@ class Post_To_Frame_ImageUser(Resource):
                         is_delete = False
                     ).save()
                     frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id))
+                    picture.update(inc__display_count=1)
 
                 except Exception as e:
                     try: os.remove(name_file)
@@ -192,7 +195,7 @@ class Post_To_Frame_ImageUser(Resource):
                 # Suppresion de l'image tampon
                 try: os.remove(name_file)
                 except: pass
-            
+
             elif frame.type_frame == "e_paper_arduino":
                 try:
                     ## Envoie de la requete au client/server
@@ -206,7 +209,7 @@ class Post_To_Frame_ImageUser(Resource):
                     })
                     requests.post("http://"+frame.ip+"/post", data=payload, timeout=30)
 
-                    ## On envoie le log
+                    ## On envoie le log + compteur affichage
                     EventsLog(
                         type_event = "user",
                         user = User.objects.get(id=get_jwt_identity()),
@@ -216,12 +219,13 @@ class Post_To_Frame_ImageUser(Resource):
                         is_delete = False
                     ).save()
                     frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id))
+                    picture.update(inc__display_count=1)
 
                 except Exception as e:
                     return {'message': 'Le cadre ne répond pas', 'status': 400}, 400
 
 
-            return {'success': True, 'status': 200}, 200
+            return {'success': True, 'last_picture_id': str(picture.id), 'last_picture_name': picture.name, 'status': 200}, 200
 
         except (FieldDoesNotExist, ValidationError):
             raise SchemaValidationError
