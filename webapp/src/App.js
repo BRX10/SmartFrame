@@ -10,6 +10,7 @@ import NewLibrary from "./routes/Librarys/newLibrary";
 import Library from "./routes/Librarys/library";
 import NewImage from "./routes/Librarys/newImage";
 import ArduinoLog from "./routes/ArduinoLog/arduinoLog";
+import EnrichmentSettings from "./routes/Settings/enrichment";
 import Signin from "./routes/Authentication/signin";
 import Signout from "./routes/Authentication/signout";
 import useToken from "./services/useToken";
@@ -42,6 +43,7 @@ export function App() {
                     <Route path="new_image/:idLibrary/:order" element={<NewImage token={token} />} />
 
                     <Route path="arduinologs" element={<ArduinoLog token={token} />} />
+                    <Route path="settings" element={<EnrichmentSettings token={token} />} />
                 </Route>
             </Routes>
         </>
