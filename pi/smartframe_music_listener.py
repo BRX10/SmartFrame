@@ -215,13 +215,6 @@ class ChromecastListener:
             return
 
         mc = self._cast.media_controller
-
-        # Forcer un refresh du status depuis le Chromecast (pas juste le cache)
-        try:
-            mc.update_status()
-        except Exception as e:
-            log.debug(f"update_status() echoue: {e}")
-
         track = self._extract_track(mc)
 
         # ── Transition vers IDLE ──
