@@ -48,22 +48,29 @@ def _fetch_lrclib(title, artist, album):
     clean_title = re.sub(r'\s*[\(\[].*?[\)\]]', '', title).strip()
     clean_title = re.sub(r'\s*-\s*(Remaster|Live|Remix|Deluxe|Bonus|Radio).*$', '', clean_title, flags=re.IGNORECASE).strip() or title
 
+    headers = {"User-Agent": "SmartFrame/1.0 (github.com/BRX10/SmartFrame)"}
+
     for attempt_params in [
         {"artist_name": artist, "track_name": title},
         {"artist_name": artist, "track_name": clean_title},
     ]:
         try:
-            resp = requests.get("https://lrclib.net/api/get", params=attempt_params, timeout=_FETCH_TIMEOUT)
+            resp = requests.get("https://lrclib.net/api/get", params=attempt_params,
+                                headers=headers, timeout=_FETCH_TIMEOUT)
+            logger.info(f"[ENRICH] LRCLIB: '{attempt_params['track_name']}' by '{artist}' → {resp.status_code}")
             if resp.status_code == 200:
                 data = resp.json()
                 lyrics = data.get("plainLyrics") or ""
                 if lyrics.strip():
-                    logger.debug(f"[ENRICH] LRCLIB: paroles trouvees pour '{attempt_params['track_name']}'")
+                    logger.info(f"[ENRICH] LRCLIB: paroles trouvees ({len(lyrics)} chars)")
                     return {"lyrics": lyrics.strip(), "available": True}
+                else:
+                    logger.info(f"[ENRICH] LRCLIB: 200 mais plainLyrics vide")
         except Exception as e:
-            logger.debug(f"[ENRICH] LRCLIB echoue: {e}")
+            logger.info(f"[ENRICH] LRCLIB echoue: {e}")
             continue
 
+    logger.info(f"[ENRICH] LRCLIB: aucune parole trouvee pour '{title}' by '{artist}'")
     return {"lyrics": "", "available": False}
 
 
