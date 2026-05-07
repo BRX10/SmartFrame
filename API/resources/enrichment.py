@@ -24,8 +24,8 @@ from database.models import TrackMetadata, AppSettings
 logger = logging.getLogger(__name__)
 
 # Timeouts reseau (connect, read) en secondes
-_FETCH_TIMEOUT = (3, 5)
-_GROQ_TIMEOUT = (3, 10)
+_FETCH_TIMEOUT = (5, 15)
+_GROQ_TIMEOUT = (5, 15)
 
 
 # ── Slug ────────────────────────────────────────────────────────────────────
