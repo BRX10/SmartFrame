@@ -27,7 +27,8 @@ def _download_artwork(url, timeout=8):
 
 
 def render_now_playing(title, artist, album=None, artwork_url=None,
-                       width=800, height=480, mask=None, display_scale=100):
+                       width=800, height=480, mask=None, display_scale=100,
+                       enrichment=None):
     """Point d'entree unique pour generer une image Now Playing.
 
     Args:
@@ -36,6 +37,7 @@ def render_now_playing(title, artist, album=None, artwork_url=None,
         width, height: dimensions du cadre
         mask: id du masque (defaut: "poster")
         display_scale: % de l'ecran utilise (50-100, defaut 100)
+        enrichment: dict optionnel avec year, tags, hook_phrase, etc.
 
     Returns:
         PIL.Image en mode RGB
@@ -57,9 +59,9 @@ def render_now_playing(title, artist, album=None, artwork_url=None,
         scaled_h = int(height * scale / 100)
 
         if orientation == "portrait":
-            inner = mask_module.render_portrait(title, artist, album, artwork, scaled_w, scaled_h)
+            inner = mask_module.render_portrait(title, artist, album, artwork, scaled_w, scaled_h, enrichment=enrichment)
         else:
-            inner = mask_module.render_landscape(title, artist, album, artwork, scaled_w, scaled_h)
+            inner = mask_module.render_landscape(title, artist, album, artwork, scaled_w, scaled_h, enrichment=enrichment)
 
         # Centrer sur un canvas blanc pleine taille
         canvas = PIL.Image.new("RGB", (width, height), (255, 255, 255))
@@ -69,6 +71,6 @@ def render_now_playing(title, artist, album=None, artwork_url=None,
         return canvas
     else:
         if orientation == "portrait":
-            return mask_module.render_portrait(title, artist, album, artwork, width, height)
+            return mask_module.render_portrait(title, artist, album, artwork, width, height, enrichment=enrichment)
         else:
-            return mask_module.render_landscape(title, artist, album, artwork, width, height)
+            return mask_module.render_landscape(title, artist, album, artwork, width, height, enrichment=enrichment)

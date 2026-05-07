@@ -1,17 +1,22 @@
-"""Masque "Minimal" — epure, beaucoup de blanc.
+"""Masque "Minimal" — epure, beaucoup de blanc, optimise e-paper.
 
-Paysage : petite pochette a gauche, texte centre a droite.
+Paysage : petite pochette a gauche, texte a droite.
 Portrait : petite pochette centree en haut, texte centre en dessous.
+
+Pas d'album dans le mode minimal. Hook phrase si disponible.
+Tout en noir pur — pas de gris.
 """
 
 import PIL.Image
 import PIL.ImageDraw
 from resources.music_masks._common import (
-    PADDING, load_font, load_font_regular, truncate_text, paste_artwork
+    PADDING, load_font, load_font_regular, load_font_italic,
+    wrap_text, truncate_text, draw_text_block, draw_text_block_centered,
+    paste_artwork
 )
 
 
-def render_landscape(title, artist, album, artwork, width=800, height=480):
+def render_landscape(title, artist, album, artwork, width=800, height=480, enrichment=None):
     img = PIL.Image.new('RGB', (width, height), (255, 255, 255))
     draw = PIL.ImageDraw.Draw(img)
 
@@ -23,31 +28,43 @@ def render_landscape(title, artist, album, artwork, width=800, height=480):
 
     paste_artwork(img, draw, artwork, art_x, art_y, art_size)
 
-    ft = load_font(28)
-    fa = load_font_regular(20)
+    # Fonts
+    ft = load_font(34)
+    fa = load_font_regular(22)
+    fh = load_font_italic(16)
 
-    # Centrage vertical titre + artiste
-    ty = (height - 28 - 12 - 20) // 2
+    # Titre (2 lignes max)
+    title_lines = wrap_text(draw, title or "Titre inconnu", ft, text_max_w, max_lines=2)
+    hook = enrichment.get("hook_phrase", "") if enrichment else ""
 
-    draw.text((text_x, ty), truncate_text(draw, title or "Titre inconnu", ft, text_max_w),
-              fill=(0, 0, 0), font=ft)
-    ty += 40
+    title_h = len(title_lines) * 48
+    artist_h = 32
+    hook_h = 24 + 12 if hook else 0
+    total_h = title_h + 12 + artist_h + hook_h
+
+    ty = (height - total_h) // 2
+
+    ty = draw_text_block(draw, title_lines, ft, text_x, ty, fill=(0, 0, 0), line_height=48)
+    ty += 12
 
     draw.text((text_x, ty), truncate_text(draw, artist or "Artiste inconnu", fa, text_max_w),
-              fill=(100, 100, 100), font=fa)
+              fill=(0, 0, 0), font=fa)
+    ty += artist_h
 
-    # Ligne fine separatrice sous le texte
+    # Hook phrase (italic)
+    if hook:
+        ty += 12
+        hook_text = truncate_text(draw, f"« {hook} »", fh, text_max_w)
+        draw.text((text_x, ty), hook_text, fill=(0, 0, 0), font=fh)
+
+    # Ligne fine separatrice
     line_y = height - PADDING * 2
-    draw.line([(PADDING * 2, line_y), (width - PADDING * 2, line_y)], fill=(220, 220, 220), width=1)
-
-    # Label discret
-    lf = load_font_regular(10)
-    draw.text((width - PADDING * 2, line_y + 8), "NOW PLAYING", fill=(200, 200, 200), font=lf, anchor="ra")
+    draw.line([(PADDING * 2, line_y), (width - PADDING * 2, line_y)], fill=(0, 0, 0), width=1)
 
     return img
 
 
-def render_portrait(title, artist, album, artwork, width=480, height=800):
+def render_portrait(title, artist, album, artwork, width=480, height=800, enrichment=None):
     img = PIL.Image.new('RGB', (width, height), (255, 255, 255))
     draw = PIL.ImageDraw.Draw(img)
 
@@ -58,21 +75,31 @@ def render_portrait(title, artist, album, artwork, width=480, height=800):
     paste_artwork(img, draw, artwork, art_x, art_y, art_size)
 
     text_max_w = width - 2 * PADDING
-    ft = load_font(28)
-    fa = load_font_regular(20)
+    ft = load_font(34)
+    fa = load_font_regular(22)
+    fh = load_font_italic(16)
 
     ty = art_y + art_size + PADDING * 2
+    center_x = width // 2
 
-    t = truncate_text(draw, title or "Titre inconnu", ft, text_max_w)
-    tw = draw.textbbox((0, 0), t, font=ft)[2]
-    draw.text(((width - tw) // 2, ty), t, fill=(0, 0, 0), font=ft)
-    ty += 40
+    # Titre centre (2 lignes max)
+    title_lines = wrap_text(draw, title or "Titre inconnu", ft, text_max_w, max_lines=2)
+    ty = draw_text_block_centered(draw, title_lines, ft, center_x, ty, fill=(0, 0, 0), line_height=48)
+    ty += 10
 
-    a = truncate_text(draw, artist or "Artiste inconnu", fa, text_max_w)
-    aw = draw.textbbox((0, 0), a, font=fa)[2]
-    draw.text(((width - aw) // 2, ty), a, fill=(100, 100, 100), font=fa)
+    # Artiste centre
+    a_text = truncate_text(draw, artist or "Artiste inconnu", fa, text_max_w)
+    from resources.music_masks._common import text_width
+    aw = text_width(draw, a_text, fa)
+    draw.text((center_x - aw // 2, ty), a_text, fill=(0, 0, 0), font=fa)
+    ty += 32
 
-    lf = load_font_regular(10)
-    draw.text((width // 2, PADDING), "NOW PLAYING", fill=(200, 200, 200), font=lf, anchor="mm")
+    # Hook phrase centree
+    hook = enrichment.get("hook_phrase", "") if enrichment else ""
+    if hook:
+        ty += 8
+        h_text = truncate_text(draw, f"« {hook} »", fh, text_max_w)
+        hw = text_width(draw, h_text, fh)
+        draw.text((center_x - hw // 2, ty), h_text, fill=(0, 0, 0), font=fh)
 
     return img

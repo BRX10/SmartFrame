@@ -16,6 +16,7 @@ from database.models import Frames
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
 from resources.music_renderer import render_now_playing
+from resources.enrichment import enrich_track
 from resources.music_masks import get_mask_ids
 from resources.draw_image import convert_image_raspberry
 from slugify import slugify
@@ -88,12 +89,16 @@ class FrameMusicAPI(Resource):
 
             size_frame = (int(frame.resolution_width), int(frame.resolution_height))
 
+            # Enrichissement (cache-first, synchrone)
+            enrichment = enrich_track(title, artist, album)
+
             # Generer l'image via le dispatcher (masque + orientation auto + scale)
             img = render_now_playing(
                 title, artist, album, artwork_url,
                 width=size_frame[0], height=size_frame[1],
                 mask=frame.music_mask or "poster",
-                display_scale=frame.music_display_scale or 100
+                display_scale=frame.music_display_scale or 100,
+                enrichment=enrichment
             )
 
             # Convertir pour e-paper

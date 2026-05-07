@@ -66,6 +66,45 @@ class Pictures(db.Document):
     display_count = db.IntField(default=0)
 
 
+class TrackMetadata(db.Document):
+    """Cache d'enrichissement des morceaux (V4-F Enrichment Engine)."""
+    slug = db.StringField(required=True, unique=True)   # artist__title__album
+    title = db.StringField()
+    artist = db.StringField()
+    album = db.StringField()
+    # Enrichissement
+    year = db.StringField()
+    tags = db.ListField(db.StringField())               # Last.fm top tags (max 5)
+    listeners = db.IntField()                            # Last.fm listeners
+    hook_phrase = db.StringField(max_length=80)          # Groq-extracted hook
+    lyrics_available = db.BooleanField(default=False)
+    # Tracabilite
+    model_used = db.StringField()                        # ex: llama3-8b-8192
+    prompt_version = db.StringField()                    # hash du prompt utilise
+    created_at = db.DateTimeField(default=datetime.utcnow)
+    enriched_at = db.DateTimeField()
+    is_complete = db.BooleanField(default=False)         # True si enrichissement termine (ou rien a enrichir)
+
+    meta = {'collection': 'tracks_metadata'}
+
+
+class AppSettings(db.Document):
+    """Configuration cle-valeur (Groq, Last.fm, etc.)."""
+    key = db.StringField(required=True, unique=True)
+    value = db.StringField()
+
+    meta = {'collection': 'app_settings'}
+
+    @staticmethod
+    def get_value(key, default=None):
+        doc = AppSettings.objects(key=key).first()
+        return doc.value if doc else default
+
+    @staticmethod
+    def set_value(key, value):
+        AppSettings.objects(key=key).update_one(set__value=str(value), upsert=True)
+
+
 class EventsLog(db.Document):
     created_at = db.DateTimeField(required=True, default=datetime.utcnow)
     type_event = db.StringField(required=True)

@@ -6,6 +6,7 @@ from resources.eventsLog import EventsLogAPI
 from resources.eventsArduinoLog import EventsArduinoLogAPI, EventsArduinoLogPaginateAPI
 from resources.events import Post_To_Frame, Post_To_Frame_ImageUser
 from resources.music import FrameMusicAPI
+from resources.settings import EnrichmentSettingsAPI
 
 
 def initialize_routes(api, app):
@@ -32,6 +33,8 @@ def initialize_routes(api, app):
     api.add_resource(FramesAPI, '/api/frames')
     api.add_resource(SchedulerAPI, '/api/scheduler')
     api.add_resource(FrameMusicAPI, '/api/frame/<id>/music')
+
+    api.add_resource(EnrichmentSettingsAPI, '/api/settings/enrichment')
 
     api.add_resource(SignupAPI, '/api/auth/signup')
     api.add_resource(LoginAPI, '/api/auth/login')
