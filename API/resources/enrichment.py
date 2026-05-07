@@ -43,12 +43,12 @@ def _make_slug(artist, title, album):
 # ── Sources externes ────────────────────────────────────────────────────────
 
 def _fetch_lrclib(title, artist, album):
-    """LRCLIB : paroles en texte brut. Essai avec album puis sans."""
-    # Nettoyer le titre : retirer les suffixes (feat. ...), (Remix), etc.
-    clean_title = _clean_track_title(title)
+    """LRCLIB : paroles en texte brut. Strategie : artiste+titre d'abord, puis titre nettoyé."""
+    import re
+    clean_title = re.sub(r'\s*[\(\[].*?[\)\]]', '', title).strip()
+    clean_title = re.sub(r'\s*-\s*(Remaster|Live|Remix|Deluxe|Bonus|Radio).*$', '', clean_title, flags=re.IGNORECASE).strip() or title
 
     for attempt_params in [
-        {"artist_name": artist, "track_name": title, **({"album_name": album} if album else {})},
         {"artist_name": artist, "track_name": title},
         {"artist_name": artist, "track_name": clean_title},
     ]:
@@ -58,23 +58,13 @@ def _fetch_lrclib(title, artist, album):
                 data = resp.json()
                 lyrics = data.get("plainLyrics") or ""
                 if lyrics.strip():
-                    logger.debug(f"[ENRICH] LRCLIB: paroles trouvees (params={list(attempt_params.keys())})")
+                    logger.debug(f"[ENRICH] LRCLIB: paroles trouvees pour '{attempt_params['track_name']}'")
                     return {"lyrics": lyrics.strip(), "available": True}
         except Exception as e:
             logger.debug(f"[ENRICH] LRCLIB echoue: {e}")
             continue
 
     return {"lyrics": "", "available": False}
-
-
-def _clean_track_title(title):
-    """Retire les suffixes courants : (feat. ...), (Remix), [Deluxe], etc."""
-    import re
-    # Retirer tout ce qui est entre parentheses ou crochets
-    cleaned = re.sub(r'\s*[\(\[].*?[\)\]]', '', title).strip()
-    # Retirer " - Remastered", " - Live", etc.
-    cleaned = re.sub(r'\s*-\s*(Remaster|Live|Remix|Deluxe|Bonus|Radio).*$', '', cleaned, flags=re.IGNORECASE).strip()
-    return cleaned or title
 
 
 def _fetch_lastfm(title, artist):
@@ -188,9 +178,9 @@ def enrich_track(title, artist, album=None):
     """Enrichit un morceau. Retourne un dict avec les donnees disponibles.
 
     Strategie :
-      1. Cache hit (is_complete=True) → retour immediat
-      2. Cache miss → collecte parallele + Groq → cache
-      3. Groq echoue → PAS de cache (is_complete=False) → retry prochain passage
+      1. Cache hit avec hook_phrase → retour immediat
+      2. Cache hit SANS hook_phrase → re-tenter l'enrichissement
+      3. Cache miss → collecte parallele + Groq → cache
 
     Returns:
         dict avec year, tags, listeners, hook_phrase, lyrics_available, model_used
@@ -198,10 +188,10 @@ def enrich_track(title, artist, album=None):
     """
     slug = _make_slug(artist, title, album)
 
-    # 1. Cache lookup
+    # 1. Cache lookup — retour immediat seulement si hook_phrase est remplie
     cached = TrackMetadata.objects(slug=slug).first()
-    if cached and cached.is_complete:
-        logger.debug(f"[ENRICH] Cache hit: {slug}")
+    if cached and cached.is_complete and cached.hook_phrase:
+        logger.debug(f"[ENRICH] Cache hit (avec hook): {slug}")
         return {
             "year": cached.year or "",
             "tags": cached.tags or [],
@@ -212,7 +202,10 @@ def enrich_track(title, artist, album=None):
         }
 
     # 2. Collecte parallele
-    logger.info(f"[ENRICH] Cache miss, enrichissement: {artist} — {title}")
+    if cached:
+        logger.info(f"[ENRICH] Retry (hook vide), re-enrichissement: {artist} — {title}")
+    else:
+        logger.info(f"[ENRICH] Cache miss, enrichissement: {artist} — {title}")
     results = {}
 
     with ThreadPoolExecutor(max_workers=3) as executor:
