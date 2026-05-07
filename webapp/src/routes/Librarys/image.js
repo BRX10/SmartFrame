@@ -272,13 +272,11 @@ export default function Image(props) {
                                     value={props.pictureModal.order}
                                     disabled={true}/>
                             </div>
-                            {props.pictureModal.displayCount > 0 && (
-                                <div className="flex items-end pb-2">
-                                    <span className="text-xs text-zinc-500">
-                                        Affichée <span className="text-zinc-300 font-medium">{props.pictureModal.displayCount}×</span>
-                                    </span>
-                                </div>
-                            )}
+                            <div className="flex items-end pb-2">
+                                <span className="text-xs text-zinc-500">
+                                    Affichages <span className="text-zinc-300 font-medium">{props.pictureModal.displayCount > 0 ? props.pictureModal.displayCount : "N/A"}</span>
+                                </span>
+                            </div>
                         </div>
 
                         <div className="flex justify-center">
