@@ -38,6 +38,7 @@ export default function Frame(props) {
     const [musicMask, setMusicMask] = useState("poster");
     const [availableMasks, setAvailableMasks] = useState([]);
     const [musicChromecast, setMusicChromecast] = useState("");
+    const [musicDisplayScale, setMusicDisplayScale] = useState(100);
     const [savingMusic, setSavingMusic] = useState(false);
 
     useEffect(() => {
@@ -53,6 +54,7 @@ export default function Frame(props) {
                     setMusicMask(frame.music_mask || "poster");
                     setAvailableMasks(frame.available_masks || ["poster", "minimal", "fullart"]);
                     setMusicChromecast(frame.music_chromecast_name || "");
+                    setMusicDisplayScale(frame.music_display_scale || 100);
                     if (frame.library_display) {
                         setSelected(props.librarys.find(l => l.id === frame.library_display._id.$oid) || { title: "Sélectionner la bibliothèque" });
                     }
@@ -340,6 +342,27 @@ export default function Frame(props) {
                                         />
                                         <span className="text-xs text-zinc-300 font-medium w-12 text-right">
                                             {musicTimeout >= 60 ? `${Math.round(musicTimeout / 60)} min` : `${musicTimeout}s`}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Taille d'affichage */}
+                                <div>
+                                    <label className="text-xs text-zinc-500 block mb-1">Taille d'affichage</label>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="range"
+                                            min="50"
+                                            max="100"
+                                            step="5"
+                                            value={musicDisplayScale}
+                                            onChange={e => setMusicDisplayScale(parseInt(e.target.value))}
+                                            onMouseUp={e => saveMusicSetting("music_display_scale", e.target.value)}
+                                            onTouchEnd={e => saveMusicSetting("music_display_scale", e.target.value)}
+                                            className="flex-1 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                                        />
+                                        <span className="text-xs text-zinc-300 font-medium w-12 text-right">
+                                            {musicDisplayScale}%
                                         </span>
                                     </div>
                                 </div>

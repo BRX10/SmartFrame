@@ -202,6 +202,9 @@ class FrameAPI(Resource):
                     put_frame.update(music_mask=mask)
             if form.get("music_chromecast_name"):
                 put_frame.update(music_chromecast_name=form.get("music_chromecast_name").strip())
+            if form.get("music_display_scale"):
+                scale = max(50, min(100, int(form.get("music_display_scale"))))
+                put_frame.update(music_display_scale=scale)
 
             # Si pas de changement de bibliotheque, retourner directement
             if not form.get("idLibrary"):

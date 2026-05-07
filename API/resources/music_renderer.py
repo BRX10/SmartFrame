@@ -27,7 +27,7 @@ def _download_artwork(url, timeout=8):
 
 
 def render_now_playing(title, artist, album=None, artwork_url=None,
-                       width=800, height=480, mask=None):
+                       width=800, height=480, mask=None, display_scale=100):
     """Point d'entree unique pour generer une image Now Playing.
 
     Args:
@@ -35,6 +35,7 @@ def render_now_playing(title, artist, album=None, artwork_url=None,
         artwork_url: URL de la pochette (telechargee ici)
         width, height: dimensions du cadre
         mask: id du masque (defaut: "poster")
+        display_scale: % de l'ecran utilise (50-100, defaut 100)
 
     Returns:
         PIL.Image en mode RGB
@@ -48,7 +49,26 @@ def render_now_playing(title, artist, album=None, artwork_url=None,
     artwork = _download_artwork(artwork_url)
     orientation = "landscape" if width >= height else "portrait"
 
-    if orientation == "portrait":
-        return mask_module.render_portrait(title, artist, album, artwork, width, height)
+    # Appliquer le scale : rendre a une taille reduite puis centrer
+    scale = max(50, min(100, display_scale or 100))
+
+    if scale < 100:
+        scaled_w = int(width * scale / 100)
+        scaled_h = int(height * scale / 100)
+
+        if orientation == "portrait":
+            inner = mask_module.render_portrait(title, artist, album, artwork, scaled_w, scaled_h)
+        else:
+            inner = mask_module.render_landscape(title, artist, album, artwork, scaled_w, scaled_h)
+
+        # Centrer sur un canvas blanc pleine taille
+        canvas = PIL.Image.new("RGB", (width, height), (255, 255, 255))
+        offset_x = (width - scaled_w) // 2
+        offset_y = (height - scaled_h) // 2
+        canvas.paste(inner, (offset_x, offset_y))
+        return canvas
     else:
-        return mask_module.render_landscape(title, artist, album, artwork, width, height)
+        if orientation == "portrait":
+            return mask_module.render_portrait(title, artist, album, artwork, width, height)
+        else:
+            return mask_module.render_landscape(title, artist, album, artwork, width, height)

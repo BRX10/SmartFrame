@@ -40,6 +40,7 @@ class FrameMusicAPI(Resource):
                 "music_idle_timeout": frame.music_idle_timeout or 120,
                 "music_mask": frame.music_mask or "poster",
                 "music_chromecast_name": frame.music_chromecast_name or "",
+                "music_display_scale": frame.music_display_scale or 100,
                 "available_masks": get_mask_ids()
             }, 200
         except Frames.DoesNotExist:
@@ -87,11 +88,12 @@ class FrameMusicAPI(Resource):
 
             size_frame = (int(frame.resolution_width), int(frame.resolution_height))
 
-            # Generer l'image via le dispatcher (masque + orientation auto)
+            # Generer l'image via le dispatcher (masque + orientation auto + scale)
             img = render_now_playing(
                 title, artist, album, artwork_url,
                 width=size_frame[0], height=size_frame[1],
-                mask=frame.music_mask or "poster"
+                mask=frame.music_mask or "poster",
+                display_scale=frame.music_display_scale or 100
             )
 
             # Convertir pour e-paper
