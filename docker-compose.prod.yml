@@ -38,7 +38,7 @@ services:
     ports:
       - '0.0.0.0:18080:8080'
     environment:
-      DATABASE_URI: mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}
+      DATABASE_URI: mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?authSource=admin
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       PORT: 8080
       SIGNUP_ENABLED: "false"
