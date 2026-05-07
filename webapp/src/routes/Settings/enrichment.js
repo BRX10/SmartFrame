@@ -4,8 +4,8 @@ import Alert from "../../components/alert";
 import Spinner from "../../components/spinner";
 
 const GROQ_MODELS = [
-    "llama3-8b-8192",
-    "llama3-70b-8192",
+    "llama-3.1-8b-instant",
+    "llama-3.3-70b-versatile",
     "gemma2-9b-it",
     "mixtral-8x7b-32768",
 ];
@@ -17,7 +17,7 @@ export default function EnrichmentSettings({ token }) {
     const [alertType, setAlertType] = useState("");
     const [alertMsg, setAlertMsg] = useState("");
 
-    const [model, setModel] = useState("llama3-8b-8192");
+    const [model, setModel] = useState("llama-3.1-8b-instant");
     const [prompt, setPrompt] = useState("");
     const [temperature, setTemperature] = useState(0.3);
     const [groqKey, setGroqKey] = useState("");
@@ -28,7 +28,7 @@ export default function EnrichmentSettings({ token }) {
     useEffect(() => {
         GetEnrichmentSettings(token)
             .then(data => {
-                setModel(data.groq_model_name || "llama3-8b-8192");
+                setModel(data.groq_model_name || "llama-3.1-8b-instant");
                 setPrompt(data.groq_system_prompt || "");
                 setTemperature(parseFloat(data.groq_temperature || "0.3"));
                 setGroqConfigured(data.groq_api_key === "configured");

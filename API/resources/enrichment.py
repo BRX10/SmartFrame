@@ -138,7 +138,7 @@ def _extract_hook(lyrics, title, artist):
         logger.warning("[ENRICH] Groq API key non configuree")
         return None, None
 
-    model = AppSettings.get_value("groq_model_name", "llama3-8b-8192")
+    model = AppSettings.get_value("groq_model_name", "llama-3.1-8b-instant")
     system_prompt = AppSettings.get_value("groq_system_prompt", _DEFAULT_SYSTEM_PROMPT)
     temperature = float(AppSettings.get_value("groq_temperature", "0.3"))
 
