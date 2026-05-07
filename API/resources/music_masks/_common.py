@@ -202,3 +202,59 @@ def format_album_year(album, enrichment=None):
     if year:
         return f"{album} ({year})"
     return album
+
+
+def format_tags(enrichment, max_tags=3):
+    """Retourne les tags Last.fm formattés. Ex: 'indie · pop · rock'."""
+    if not enrichment:
+        return ""
+    tags = enrichment.get("tags", [])
+    if not tags:
+        return ""
+    return " · ".join(tags[:max_tags])
+
+
+# ── Icones decoratives (shapes PIL, pas de font icon) ──────────────────────
+
+def draw_icon_play(draw, cx, cy, size=16):
+    """Triangle play rempli noir. cx,cy = centre."""
+    h = size
+    w = int(size * 0.85)
+    draw.polygon([
+        (cx - w // 2, cy - h // 2),
+        (cx - w // 2, cy + h // 2),
+        (cx + w // 2, cy),
+    ], fill=(0, 0, 0))
+
+
+def draw_icon_heart(draw, cx, cy, size=14):
+    """Coeur vide (outline noir). cx,cy = centre."""
+    s = size / 2
+    # Dessiner avec des arcs et lignes — approximation polygonale
+    import math
+    pts = []
+    # Lobe gauche
+    for a in range(0, 180, 10):
+        rad = math.radians(a)
+        pts.append((
+            cx - s / 2 + (s / 2) * math.cos(rad),
+            cy - s / 3 - (s / 2) * math.sin(rad)
+        ))
+    # Lobe droit
+    for a in range(0, 180, 10):
+        rad = math.radians(a)
+        pts.append((
+            cx + s / 2 + (s / 2) * math.cos(rad),
+            cy - s / 3 - (s / 2) * math.sin(rad)
+        ))
+    # Pointe basse
+    pts.append((cx, cy + s))
+    draw.polygon(pts, outline=(0, 0, 0), fill=None)
+
+
+def draw_icon_row(draw, x, y, size=14, gap=12):
+    """Dessine la rangee d'icones decoratives : ▶  ♡. Retourne x apres."""
+    draw_icon_play(draw, x + size // 2, y + size // 2, size)
+    x += size + gap
+    draw_icon_heart(draw, x + size // 2, y + size // 2, size)
+    return x + size
