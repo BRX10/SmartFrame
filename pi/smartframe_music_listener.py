@@ -66,13 +66,13 @@ class TrackInfo:
     artist: str = ""
     album: str = ""
     artwork_url: str = ""
-    state: str = "IDLE"  # PLAYING, PAUSED, IDLE, BUFFERING
+    state: str = "IDLE"  # PLAYING, PAUSED, IDLE, BUFFERING, UNKNOWN
 
     def is_playing(self) -> bool:
         return self.state in ("PLAYING", "BUFFERING")
 
     def is_idle(self) -> bool:
-        return self.state == "IDLE"
+        return self.state in ("IDLE", "UNKNOWN")
 
     def fingerprint(self) -> str:
         """Identifiant unique du morceau (evite les envois dupliques)."""
@@ -155,9 +155,13 @@ class ChromecastListener:
         self._last_state: str = "IDLE"
         self._idle_since: Optional[float] = None
         self._idle_sent: bool = False
+        self._idle_consecutive: int = 0  # polls consecutifs en idle
         self._running: bool = False
         self._cast = None
         self._browser = None
+
+    # Nombre minimum de polls consecutifs en idle avant de demarrer le timer
+    IDLE_CONFIRM_POLLS = 3
 
     def start(self):
         """Demarre la decouverte et l'ecoute du Chromecast."""
@@ -211,15 +215,29 @@ class ChromecastListener:
             return
 
         mc = self._cast.media_controller
+
+        # Forcer un refresh du status depuis le Chromecast (pas juste le cache)
+        try:
+            mc.update_status()
+        except Exception as e:
+            log.debug(f"update_status() echoue: {e}")
+
         track = self._extract_track(mc)
 
         # ── Transition vers IDLE ──
         if track.is_idle() or (not track.title and not track.artist):
+            self._idle_consecutive += 1
+
             if self._last_state in ("PLAYING", "BUFFERING", "PAUSED"):
-                # Demarrer le timer idle
+                # Exiger N polls consecutifs avant de considerer comme vraiment idle
+                if self._idle_consecutive < self.IDLE_CONFIRM_POLLS:
+                    log.debug(f"Idle poll {self._idle_consecutive}/{self.IDLE_CONFIRM_POLLS}, en attente de confirmation...")
+                    return
+
+                # Demarrer le timer idle apres confirmation
                 if self._idle_since is None:
                     self._idle_since = time.time()
-                    log.debug(f"Idle detecte, timeout dans {IDLE_TIMEOUT}s")
+                    log.info(f"Idle confirme apres {self.IDLE_CONFIRM_POLLS} polls, timeout dans {IDLE_TIMEOUT}s")
 
                 elapsed = time.time() - self._idle_since
                 if elapsed >= IDLE_TIMEOUT and not self._idle_sent:
@@ -232,6 +250,7 @@ class ChromecastListener:
         # ── Reset idle timer si musique reprend ──
         self._idle_since = None
         self._idle_sent = False
+        self._idle_consecutive = 0
 
         # ── Nouvelle piste ou changement d'etat significatif ──
         fp = track.fingerprint()
