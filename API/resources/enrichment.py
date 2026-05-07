@@ -43,21 +43,38 @@ def _make_slug(artist, title, album):
 # ── Sources externes ────────────────────────────────────────────────────────
 
 def _fetch_lrclib(title, artist, album):
-    """LRCLIB : paroles en texte brut."""
-    try:
-        params = {"artist_name": artist, "track_name": title}
-        if album:
-            params["album_name"] = album
-        resp = requests.get("https://lrclib.net/api/get", params=params, timeout=_FETCH_TIMEOUT)
-        if resp.status_code == 200:
-            data = resp.json()
-            lyrics = data.get("plainLyrics") or ""
-            if lyrics.strip():
-                return {"lyrics": lyrics.strip(), "available": True}
-        return {"lyrics": "", "available": False}
-    except Exception as e:
-        logger.debug(f"[ENRICH] LRCLIB echoue: {e}")
-        return {"lyrics": "", "available": False}
+    """LRCLIB : paroles en texte brut. Essai avec album puis sans."""
+    # Nettoyer le titre : retirer les suffixes (feat. ...), (Remix), etc.
+    clean_title = _clean_track_title(title)
+
+    for attempt_params in [
+        {"artist_name": artist, "track_name": title, **({"album_name": album} if album else {})},
+        {"artist_name": artist, "track_name": title},
+        {"artist_name": artist, "track_name": clean_title},
+    ]:
+        try:
+            resp = requests.get("https://lrclib.net/api/get", params=attempt_params, timeout=_FETCH_TIMEOUT)
+            if resp.status_code == 200:
+                data = resp.json()
+                lyrics = data.get("plainLyrics") or ""
+                if lyrics.strip():
+                    logger.debug(f"[ENRICH] LRCLIB: paroles trouvees (params={list(attempt_params.keys())})")
+                    return {"lyrics": lyrics.strip(), "available": True}
+        except Exception as e:
+            logger.debug(f"[ENRICH] LRCLIB echoue: {e}")
+            continue
+
+    return {"lyrics": "", "available": False}
+
+
+def _clean_track_title(title):
+    """Retire les suffixes courants : (feat. ...), (Remix), [Deluxe], etc."""
+    import re
+    # Retirer tout ce qui est entre parentheses ou crochets
+    cleaned = re.sub(r'\s*[\(\[].*?[\)\]]', '', title).strip()
+    # Retirer " - Remastered", " - Live", etc.
+    cleaned = re.sub(r'\s*-\s*(Remaster|Live|Remix|Deluxe|Bonus|Radio).*$', '', cleaned, flags=re.IGNORECASE).strip()
+    return cleaned or title
 
 
 def _fetch_lastfm(title, artist):
