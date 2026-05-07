@@ -74,7 +74,7 @@ const NAV_ITEMS = [
     { path: '/',          label: 'Home',     Icon: IconHome    },
     { path: '/frames',    label: 'Cadres',   Icon: IconFrames  },
     { path: '/librarys',  label: 'Médias',   Icon: IconLibrary },
-    { path: '/arduinologs', label: 'Logs',   Icon: IconLogs    },
+    { path: '/activity',    label: 'Activité', Icon: IconLogs    },
     { path: '/settings',    label: 'Réglages', Icon: IconSettings },
 ];
 
@@ -182,6 +182,7 @@ function TopBar({ pathname }) {
         'library':     'Bibliothèque',
         'new_library': 'Nouvelle bibliothèque',
         'new_image':   'Nouvelle image',
+        'activity':    'Activité',
         'arduinologs': 'Logs',
         'settings':    'Réglages',
     };

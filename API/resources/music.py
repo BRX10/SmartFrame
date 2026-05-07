@@ -12,7 +12,7 @@ Tout le rendu est fait cote serveur.
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource
 from flask import request
-from database.models import Frames
+from database.models import Frames, EventsLog
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
 from resources.music_renderer import render_now_playing
@@ -124,6 +124,11 @@ class FrameMusicAPI(Resource):
                         last_success_at=datetime.utcnow(),
                         last_seen_at=datetime.utcnow()
                     )
+                    EventsLog(
+                        type_event="music",
+                        frame=frame,
+                        message=f"{artist} — {title}"
+                    ).save()
                     logger.info(f"[MUSIC] Now playing: {artist} — {title} → {frame.name} (mask={frame.music_mask})")
                 except Exception as e:
                     logger.warning(f"[MUSIC] Erreur envoi cadre: {e}")
@@ -193,6 +198,11 @@ class FrameMusicAPI(Resource):
                 },
                 timeout=(5, 30)
             )
+            EventsLog(
+                        type_event="music-end",
+                        frame=frame,
+                        message=f"Fin musique, retour biblio"
+                    ).save()
             logger.info(f"[MUSIC] Fin musique, retour biblio → {frame.name}")
             return {"success": True, "restored": True}, 200
         except Exception as e:
