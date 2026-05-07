@@ -40,6 +40,9 @@ services:
     environment:
       DATABASE_URI: mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?authSource=admin
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      AUTH: ${TOKEN_API}
+      HOST_SERVER: ${HOST_SERVER}
+      PORT_SERVER: ${PORT_SERVER}
       PORT: 8080
       SIGNUP_ENABLED: "false"
     healthcheck:
