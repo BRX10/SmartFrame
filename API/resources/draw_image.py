@@ -1,5 +1,6 @@
 import wand.image
 import PIL
+from PIL import ImageEnhance, ImageOps
 import io
 
 
@@ -23,13 +24,27 @@ def calculate_crop_area(size_in, size):
     return (x, y, x+wo, y+ho)
 
 
-def convert_image_raspberry(image, size_frame):
+def apply_contrast_boost(im):
+    """Améliore le contraste pour e-paper : pousse les gris clairs vers blanc pur,
+    les gris foncés vers noir pur. Réduit le mouchetage dans les zones claires."""
+    im = im.convert('L')
+    im = ImageOps.autocontrast(im, cutoff=(10, 10))
+    im = ImageEnhance.Contrast(im).enhance(1.5)
+    im = im.convert('RGB')
+    return im
+
+
+def convert_image_raspberry(image, size_frame, contrast_boost=False):
     # Crop And Resize
     im = resize_and_crop(image, size_frame)
-    ## grayscale. this mainly prevents image artifacts
-    im = im.convert('I')
-    ## remove alpha channel to enable conversion to palette
-    im = im.convert('RGB')
+
+    if contrast_boost:
+        im = apply_contrast_boost(im)
+    else:
+        ## grayscale. this mainly prevents image artifacts
+        im = im.convert('I')
+        ## remove alpha channel to enable conversion to palette
+        im = im.convert('RGB')
 
     return im
 

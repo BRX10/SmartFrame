@@ -62,7 +62,7 @@ class Post_To_Frame(Resource):
 
             if frame.type_frame == "e_paper_raspbery":
                 name_file = "tmp/" +slugify("tmp_" + frame.name + "_" + library.name + "_" + picture.name) + ".bmp"
-                im = convert_image_raspberry(image_read, size_frame)
+                im = convert_image_raspberry(image_read, size_frame, contrast_boost=bool(frame.contrast_boost_photo))
                 im.save(name_file)
 
                 last_exception = None
@@ -75,7 +75,7 @@ class Post_To_Frame(Resource):
 
                         ## On envoie le log + statut frame OK + compteur affichage
                         EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
-                        frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id))
+                        frame.update(last_success_at=datetime.utcnow(), last_seen_at=datetime.utcnow(), last_picture_id=str(picture.id), unset__music_now_playing=True)
                         picture.update(inc__display_count=1)
                         last_exception = None
                         break
@@ -166,7 +166,7 @@ class Post_To_Frame_ImageUser(Resource):
            
             if frame.type_frame == "e_paper_raspbery":
                 name_file = "tmp/" +slugify("tmp_" + frame.name + "_" + picture.name) + ".bmp"
-                im = convert_image_raspberry(image_read, size_frame)
+                im = convert_image_raspberry(image_read, size_frame, contrast_boost=bool(frame.contrast_boost_photo))
                 im.save(name_file)
 
                 try:

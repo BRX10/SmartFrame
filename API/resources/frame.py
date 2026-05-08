@@ -153,6 +153,9 @@ class FrameAPI(Resource):
             frame_dict['music_mask'] = frame.music_mask or "poster"
             frame_dict['music_chromecast_name'] = frame.music_chromecast_name or ""
             frame_dict['available_masks'] = get_mask_ids()
+            frame_dict['contrast_boost_photo'] = frame.contrast_boost_photo if frame.contrast_boost_photo is not None else True
+            frame_dict['contrast_boost_music'] = frame.contrast_boost_music if frame.contrast_boost_music is not None else True
+            frame_dict['music_now_playing'] = frame.music_now_playing or None
 
             if frame.library_display:
                 frame_dict["library_display"] = Librarys.objects.get(id=frame.library_display.id).to_mongo().to_dict()
@@ -205,6 +208,12 @@ class FrameAPI(Resource):
             if form.get("music_display_scale"):
                 scale = max(50, min(100, int(form.get("music_display_scale"))))
                 put_frame.update(music_display_scale=scale)
+            if "contrast_boost_photo" in form:
+                val = form.get("contrast_boost_photo", "").lower() in ("true", "1", "yes")
+                put_frame.update(contrast_boost_photo=val)
+            if "contrast_boost_music" in form:
+                val = form.get("contrast_boost_music", "").lower() in ("true", "1", "yes")
+                put_frame.update(contrast_boost_music=val)
 
             # Si pas de changement de bibliotheque, retourner directement
             if not form.get("idLibrary"):
@@ -356,6 +365,9 @@ class FramesAPI(Resource):
                 frame_dict['music_idle_timeout'] = frame.music_idle_timeout or 120
                 frame_dict['music_mask'] = frame.music_mask or "poster"
                 frame_dict['music_chromecast_name'] = frame.music_chromecast_name or ""
+                frame_dict['contrast_boost_photo'] = frame.contrast_boost_photo if frame.contrast_boost_photo is not None else True
+                frame_dict['contrast_boost_music'] = frame.contrast_boost_music if frame.contrast_boost_music is not None else True
+                frame_dict['music_now_playing'] = frame.music_now_playing or None
 
                 if frame.library_display:
                     frame_dict['library_display'] = Librarys.objects.get(id=frame.library_display.id).to_mongo().to_dict()

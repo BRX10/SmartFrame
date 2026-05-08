@@ -16,8 +16,12 @@ function FrameStatusCard({ frame, token, onRefreshSuccess }) {
     const [sent, setSent] = useState(false);
     const [thumbUrl, setThumbUrl] = useState(null);
 
-    // Thumbnail from current_picture (enriched by API frames list)
+    const nowPlaying = frame?.music_now_playing;
+    const isPlayingMusic = !!nowPlaying?.title;
+
+    // Thumbnail from current_picture — or skip if music is playing
     useEffect(() => {
+        if (isPlayingMusic) return; // pas besoin de charger la photo
         const picId = frame?.current_picture?.id || frame?.last_picture_id;
         if (!picId) return;
         let alive = true;
@@ -25,7 +29,7 @@ function FrameStatusCard({ frame, token, onRefreshSuccess }) {
             .then(blob => { if (alive) setThumbUrl(URL.createObjectURL(blob)); })
             .catch(() => {});
         return () => { alive = false; };
-    }, [token, frame?.current_picture?.id, frame?.last_picture_id]);
+    }, [token, frame?.current_picture?.id, frame?.last_picture_id, isPlayingMusic]);
 
     function refresh() {
         if (!frame?.library_display) return;
@@ -65,11 +69,22 @@ function FrameStatusCard({ frame, token, onRefreshSuccess }) {
     };
     const status = statusMap[frame.status] || statusMap.unknown;
 
+    // Aspect ratio from frame dimensions
+    const aspectRatio = frame.resolution_width && frame.resolution_height
+        ? `${frame.resolution_width}/${frame.resolution_height}`
+        : '4/3';
+
     return (
         <div className="shrink-0 w-48 rounded-2xl border border-zinc-800 bg-zinc-900 overflow-hidden flex flex-col">
-            {/* Thumbnail */}
-            <div className="w-full aspect-[4/3] bg-zinc-800 flex items-center justify-center overflow-hidden">
-                {thumbUrl ? (
+            {/* Thumbnail — music or photo */}
+            <div className="w-full bg-zinc-800 flex items-center justify-center overflow-hidden" style={{ aspectRatio }}>
+                {isPlayingMusic ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-zinc-900 px-3">
+                        <span className="text-2xl">♪</span>
+                        <p className="text-[11px] font-medium text-orange-400 text-center truncate w-full">{nowPlaying.title}</p>
+                        <p className="text-[10px] text-zinc-400 text-center truncate w-full">{nowPlaying.artist}</p>
+                    </div>
+                ) : thumbUrl ? (
                     <img src={thumbUrl} alt="Affichage actuel" className="w-full h-full object-cover" />
                 ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8 text-zinc-700">
@@ -84,11 +99,21 @@ function FrameStatusCard({ frame, token, onRefreshSuccess }) {
                     <a href={`/frames/${frame._id.$oid}`} className="font-semibold text-sm text-zinc-100 truncate hover:text-orange-400 transition-colors">
                         {frame.name}
                     </a>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ml-2 ${status.color}`} title={status.label} />
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        {isPlayingMusic && (
+                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">♪ En cours</span>
+                        )}
+                        <span className={`w-2 h-2 rounded-full ${status.color}`} title={status.label} />
+                    </div>
                 </div>
 
-                {/* Library & delay */}
-                {library ? (
+                {/* Music playing info or library info */}
+                {isPlayingMusic ? (
+                    <div className="flex flex-col gap-0.5">
+                        <p className="text-xs text-orange-400 truncate">{nowPlaying.artist} — {nowPlaying.title}</p>
+                        {nowPlaying.album && <p className="text-[10px] text-zinc-500 truncate">{nowPlaying.album}</p>}
+                    </div>
+                ) : library ? (
                     <div className="flex flex-col gap-0.5">
                         <a href={`/library/${library._id.$oid}`} className="text-xs text-orange-400 hover:underline truncate">
                             {library.name}
@@ -101,8 +126,8 @@ function FrameStatusCard({ frame, token, onRefreshSuccess }) {
                     <p className="text-xs text-zinc-600 italic">Aucune bibliothèque active</p>
                 )}
 
-                {/* Last image name */}
-                {frame.current_picture?.name && (
+                {/* Last image name (only when not playing music) */}
+                {!isPlayingMusic && frame.current_picture?.name && (
                     <p className="text-[10px] text-zinc-600 truncate">
                         <span className="text-zinc-500">{frame.current_picture.name}</span>
                     </p>

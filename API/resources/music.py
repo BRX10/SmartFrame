@@ -105,7 +105,7 @@ class FrameMusicAPI(Resource):
             img_bytes = io.BytesIO()
             img.save(img_bytes, format='BMP')
             img_bytes.seek(0)
-            img_epaper = convert_image_raspberry(img_bytes.read(), size_frame)
+            img_epaper = convert_image_raspberry(img_bytes.read(), size_frame, contrast_boost=bool(frame.contrast_boost_music))
 
             # Sauvegarder en fichier temporaire
             name_file = f"tmp/music_{slugify(frame.name)}_{slugify(title)}.bmp"
@@ -122,7 +122,13 @@ class FrameMusicAPI(Resource):
                     )
                     frame.update(
                         last_success_at=datetime.utcnow(),
-                        last_seen_at=datetime.utcnow()
+                        last_seen_at=datetime.utcnow(),
+                        music_now_playing={
+                            "title": title,
+                            "artist": artist,
+                            "album": album or "",
+                            "artwork_url": artwork_url or ""
+                        }
                     )
                     EventsLog(
                         type_event="music",
@@ -198,6 +204,7 @@ class FrameMusicAPI(Resource):
                 },
                 timeout=(5, 30)
             )
+            frame.update(unset__music_now_playing=True)
             EventsLog(
                         type_event="music-end",
                         frame=frame,

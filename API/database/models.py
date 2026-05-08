@@ -45,6 +45,11 @@ class Frames(db.Document):
     music_mask = db.StringField(default="poster")   # masque visuel Now Playing
     music_chromecast_name = db.StringField()        # nom du Chromecast a ecouter (ex: "Nest Mini salon")
     music_display_scale = db.IntField(default=100)   # % de l'ecran utilise pour le rendu musique (50-100)
+    # Contraste e-paper (dissocié photos/musique)
+    contrast_boost_photo = db.BooleanField(default=True)
+    contrast_boost_music = db.BooleanField(default=True)
+    # État musique en cours (pour affichage Home webapp)
+    music_now_playing = db.DictField()  # {title, artist, album, artwork_url} ou None
 
 
 class Librarys(db.Document):

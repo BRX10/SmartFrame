@@ -41,6 +41,10 @@ export default function Frame(props) {
     const [musicDisplayScale, setMusicDisplayScale] = useState(100);
     const [savingMusic, setSavingMusic] = useState(false);
 
+    // Contrast boost states
+    const [contrastPhoto, setContrastPhoto] = useState(true);
+    const [contrastMusic, setContrastMusic] = useState(true);
+
     useEffect(() => {
         if (props.isOpen) {
             setConfirmDelete(false);
@@ -55,6 +59,8 @@ export default function Frame(props) {
                     setAvailableMasks(frame.available_masks || ["poster", "minimal", "fullart"]);
                     setMusicChromecast(frame.music_chromecast_name || "");
                     setMusicDisplayScale(frame.music_display_scale || 100);
+                    setContrastPhoto(frame.contrast_boost_photo !== undefined ? frame.contrast_boost_photo : true);
+                    setContrastMusic(frame.contrast_boost_music !== undefined ? frame.contrast_boost_music : true);
                     if (frame.library_display) {
                         setSelected(props.librarys.find(l => l.id === frame.library_display._id.$oid) || { title: "Sélectionner la bibliothèque" });
                     }
@@ -145,6 +151,18 @@ export default function Frame(props) {
         const clamped = Math.max(30, Math.min(600, parseInt(val) || 120));
         setMusicTimeout(clamped);
         saveMusicSetting("music_idle_timeout", clamped);
+    }
+
+    function toggleContrastPhoto() {
+        const newVal = !contrastPhoto;
+        setContrastPhoto(newVal);
+        saveMusicSetting("contrast_boost_photo", newVal);
+    }
+
+    function toggleContrastMusic() {
+        const newVal = !contrastMusic;
+        setContrastMusic(newVal);
+        saveMusicSetting("contrast_boost_music", newVal);
     }
 
     function changeSelectedLibrary(idFrame, selectdLibrary) {
@@ -421,6 +439,44 @@ export default function Frame(props) {
                                 </div>
                             </div>
                         )}
+                    </div>
+
+                    {/* Rendu e-paper — Contrast boost */}
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-800/50 p-4 mb-5">
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="text-sm">◐</span>
+                            <span className="text-xs text-zinc-400 uppercase tracking-wider font-medium">Rendu e-paper</span>
+                        </div>
+                        <div className="space-y-3">
+                            {/* Contrast boost photos */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs text-zinc-300">Forcer le contraste — Photos</p>
+                                    <p className="text-[10px] text-zinc-600">Renforce les blancs et noirs des photos</p>
+                                </div>
+                                <button
+                                    onClick={toggleContrastPhoto}
+                                    disabled={savingMusic}
+                                    className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${contrastPhoto ? 'bg-orange-500' : 'bg-zinc-700'} disabled:opacity-50`}
+                                >
+                                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${contrastPhoto ? 'left-5' : 'left-0.5'}`} />
+                                </button>
+                            </div>
+                            {/* Contrast boost musique */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs text-zinc-300">Forcer le contraste — Musique</p>
+                                    <p className="text-[10px] text-zinc-600">Renforce les blancs et noirs du mode musique</p>
+                                </div>
+                                <button
+                                    onClick={toggleContrastMusic}
+                                    disabled={savingMusic}
+                                    className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${contrastMusic ? 'bg-orange-500' : 'bg-zinc-700'} disabled:opacity-50`}
+                                >
+                                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${contrastMusic ? 'left-5' : 'left-0.5'}`} />
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Danger zone */}
