@@ -81,10 +81,11 @@ class TrackMetadata(db.Document):
     year = db.StringField()
     tags = db.ListField(db.StringField())               # Last.fm top tags (max 5)
     listeners = db.IntField()                            # Last.fm listeners
-    hook_phrase = db.StringField(max_length=80)          # Groq-extracted hook
+    hook_phrase = db.StringField(max_length=80)          # phrase cle extraite par LLM
+    song_theme = db.StringField()                        # theme de la chanson resume par LLM
     lyrics_available = db.BooleanField(default=False)
     # Tracabilite
-    model_used = db.StringField()                        # ex: llama3-8b-8192
+    model_used = db.StringField()                        # ex: gemini/gemini-flash-latest
     prompt_version = db.StringField()                    # hash du prompt utilise
     created_at = db.DateTimeField(default=datetime.utcnow)
     enriched_at = db.DateTimeField()

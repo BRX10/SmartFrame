@@ -8,6 +8,7 @@ from flask_jwt_extended import jwt_required
 from flask_restful import Resource
 from flask import request
 from database.models import AppSettings
+from resources.enrichment import _DEFAULT_SYSTEM_PROMPT, _DEFAULT_GROQ_MODEL
 from resources.errors import InternalServerError
 import logging
 
@@ -15,15 +16,8 @@ logger = logging.getLogger(__name__)
 
 # Cles autorisees et leurs defauts
 _SETTINGS_KEYS = {
-    "groq_model_name": "llama3-8b-8192",
-    "groq_system_prompt": (
-        "Tu es un curateur musical. On te donne les paroles d'un morceau. "
-        "Extrais UNE phrase percutante (hook) de ces paroles. "
-        "Contraintes strictes : 60 caracteres max, pas de guillemets, "
-        "pas de preambule comme 'Voici la phrase', "
-        "respecte la langue originale des paroles. "
-        "Reponds UNIQUEMENT avec la phrase extraite."
-    ),
+    "groq_model_name": _DEFAULT_GROQ_MODEL,
+    "groq_system_prompt": _DEFAULT_SYSTEM_PROMPT,
     "groq_temperature": "0.3",
     "groq_api_key": "",
     "lastfm_api_key": "",
