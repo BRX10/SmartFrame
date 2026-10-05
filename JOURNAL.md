@@ -229,6 +229,26 @@ Premiers tests avec le nouveau kit : `BUSY pin = 0`, init bloque. Causes identif
 
 ---
 
+## Session 2026-10-05 — Phrase clé musique : modèle Groq retiré + nouveau prompt
+
+### Problème
+- Musique : pochette/titre OK mais plus de phrase clé. Logs : `Groq 404 model_not_found` sur `llama-3.1-8b-instant` (modèles Llama retirés par Groq). Paroles LRCLIB OK, cache marqué partiel.
+- Le défaut de `settings.py` (`llama3-8b-8192`) était lui aussi mort.
+
+### Correctif (commit dceb766, `API/resources/enrichment.py`)
+- **Sélection auto du modèle** : lecture de `GET /openai/v1/models` (cache 6 h), modèles chat avec contexte ≥ 16k. Ordre : modèle configuré → `openai/gpt-oss-120b` → `openai/gpt-oss-20b` → le reste. 403 (bloqué au niveau projet, ex. `qwen/qwen3.8-27b`) ou 404 → modèle suivant, écarté 6 h.
+- gpt-oss = modèle à raisonnement : `reasoning_effort: low` + `max_completion_tokens: 2048` (l ancien `max_tokens: 80` serait consommé par le raisonnement).
+- **Nouveau prompt** : thème → 3 lignes verbatim → choix, réponse JSON (`{theme, candidates, choice}`, consigne JSON ajoutée par le code). Vérification que la phrase existe mot pour mot dans les paroles, nettoyage parenthèses / « oh, yeah » finaux. Paroles dédoublonnées, 8000 car. max.
+- `TrackMetadata.song_theme` + `prompt_version` (hash du prompt) : changer le prompt relance l extraction des morceaux en cache.
+- Base : ancien prompt sauvé sous `groq_system_prompt_backup`, `groq_model_name` = `openai/gpt-oss-120b`. Backup fichiers : `/opt/smartframe/backup-20261005/`.
+- Validé en prod : Ella Henderson – Ugly, Emmy Meli – I AM WOMAN → phrases extraites.
+
+### Reste à faire
+- UI Paramètres > Enrichissement : la liste `GROQ_MODELS` (webapp/src/routes/Settings/enrichment.js) propose encore 4 modèles Llama morts (sans conséquence grâce au fallback).
+- Commit non poussé sur origin.
+
+---
+
 ## Backlog
 
 ### Prioritaire
