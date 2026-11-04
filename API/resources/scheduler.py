@@ -12,6 +12,7 @@ bibliotheque assignee). Quand on change la biblio d'un cadre, on met a jour le j
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from datetime import datetime, timedelta, timezone
 import requests
 import os
 import logging
@@ -36,7 +37,27 @@ def _send_image_to_frame(frame_id, library_id):
         logger.warning(f"[SCHEDULER] Erreur envoi: frame={frame_id} — {e}")
 
 
-def schedule_frame(frame_id, library_id, delay_minutes):
+def _first_run_after_restart(last_success_at, delay_min):
+    """Premiere rotation apres un (re)demarrage de l'API.
+
+    Sans cela, l'intervalle repartait de zero a chaque redemarrage : le cadre
+    restait sans nouvelle image jusqu'a delay + duree d'arret, depassait la
+    tolerance de compute_frame_status et declenchait une fausse alerte
+    "offline" (incident 2026-11-04).
+    On garde le rythme : last_success_at + delay si c'est encore a venir,
+    sinon dans 1 minute.
+    """
+    now = datetime.now(timezone.utc)
+    soon = now + timedelta(minutes=1)
+    if last_success_at:
+        last = last_success_at if last_success_at.tzinfo else last_success_at.replace(tzinfo=timezone.utc)
+        due = last + timedelta(minutes=delay_min)
+        if due > soon:
+            return due
+    return soon
+
+
+def schedule_frame(frame_id, library_id, delay_minutes, last_success_at=None, at_startup=False):
     """Ajoute ou met a jour le job de rotation pour un cadre."""
     job_id = f"frame_{frame_id}"
 
@@ -54,6 +75,10 @@ def schedule_frame(frame_id, library_id, delay_minutes):
         delay_seconds = delay_val * 60
         delay_min = delay_val
 
+    extra = {}
+    if at_startup:
+        extra['next_run_time'] = _first_run_after_restart(last_success_at, delay_min)
+
     scheduler.add_job(
         _send_image_to_frame,
         trigger=IntervalTrigger(minutes=delay_min),
@@ -61,9 +86,11 @@ def schedule_frame(frame_id, library_id, delay_minutes):
         id=job_id,
         name=f"Rotation cadre {frame_id}",
         replace_existing=True,
-        misfire_grace_time=120
+        misfire_grace_time=120,
+        **extra
     )
-    logger.info(f"[SCHEDULER] Job programme: frame={frame_id} toutes les {delay_min}min (raw delay={delay_val})")
+    first = f", premiere rotation {extra['next_run_time'].isoformat()}" if extra else ""
+    logger.info(f"[SCHEDULER] Job programme: frame={frame_id} toutes les {delay_min}min (raw delay={delay_val}){first}")
 
 
 def unschedule_frame(frame_id):
@@ -85,7 +112,8 @@ def rebuild_all_jobs():
         if frame.library_display:
             try:
                 delay = int(frame.library_display.delay) if frame.library_display.delay else 60
-                schedule_frame(str(frame.id), str(frame.library_display.id), delay)
+                schedule_frame(str(frame.id), str(frame.library_display.id), delay,
+                               last_success_at=frame.last_success_at, at_startup=True)
                 count += 1
             except Exception as e:
                 logger.warning(f"[SCHEDULER] Impossible de planifier frame {frame.id}: {e}")
