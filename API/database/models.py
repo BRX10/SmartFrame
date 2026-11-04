@@ -121,8 +121,14 @@ class EventsLog(db.Document):
     is_delete = db.BooleanField(required=True, default=False)
     message = db.StringField(max_length=300)
 
+    # Index (2026-11-04) : tri/pagination de /api/activity et /api/eventslog,
+    # compteurs 24 h de /api/frames
+    meta = {'indexes': ['-created_at', ('frame', 'type_event', '-created_at')]}
+
 class EventsArduinoLog(db.Document):
     created_at = db.DateTimeField(required=True, default=datetime.utcnow)
     type_event = db.StringField(required=True)
     frame = db.ReferenceField('Frames')
     message = db.StringField(required=True)
+
+    meta = {'indexes': ['-created_at']}
