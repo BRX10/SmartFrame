@@ -5,7 +5,7 @@ from database.models import Librarys, EventsLog, Frames, Pictures, User
 from mongoengine.errors import FieldDoesNotExist, ValidationError
 from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError, classify_frame_error, frame_unreachable, PI_PICTURE_TIMEOUT
 from datetime import datetime
-from resources.draw_image import convert_image_raspberry
+from resources.draw_image import convert_image_raspberry, to_pi_bmp
 from slugify import slugify
 import requests
 from requests.adapters import HTTPAdapter
@@ -63,7 +63,7 @@ class Post_To_Frame(Resource):
             if frame.type_frame == "e_paper_raspbery":
                 name_file = "tmp/" +slugify("tmp_" + frame.name + "_" + library.name + "_" + picture.name) + ".bmp"
                 im = convert_image_raspberry(image_read, size_frame, contrast_boost=bool(frame.contrast_boost_photo))
-                im.save(name_file)
+                to_pi_bmp(im).save(name_file)
 
                 last_exception = None
                 for attempt in range(MAX_RETRIES + 1):
@@ -171,7 +171,7 @@ class Post_To_Frame_ImageUser(Resource):
             if frame.type_frame == "e_paper_raspbery":
                 name_file = "tmp/" +slugify("tmp_" + frame.name + "_" + picture.name) + ".bmp"
                 im = convert_image_raspberry(image_read, size_frame, contrast_boost=bool(frame.contrast_boost_photo))
-                im.save(name_file)
+                to_pi_bmp(im).save(name_file)
 
                 try:
                     ## Envoie de la requete au client/server

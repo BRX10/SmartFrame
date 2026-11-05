@@ -18,7 +18,7 @@ from resources.errors import SchemaValidationError, InternalServerError, Expired
 from resources.music_renderer import render_now_playing
 from resources.enrichment import enrich_track
 from resources.music_masks import get_mask_ids
-from resources.draw_image import convert_image_raspberry
+from resources.draw_image import convert_image_raspberry, to_pi_bmp
 from slugify import slugify
 from datetime import datetime
 import requests as http_requests
@@ -109,7 +109,7 @@ class FrameMusicAPI(Resource):
 
             # Sauvegarder en fichier temporaire
             name_file = f"tmp/music_{slugify(frame.name)}_{slugify(title)}.bmp"
-            img_epaper.save(name_file)
+            to_pi_bmp(img_epaper).save(name_file)
 
             # Envoyer au cadre
             if frame.type_frame == "e_paper_raspbery":

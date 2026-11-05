@@ -64,3 +64,24 @@ def resize_and_crop(image, size_frame):
     crop = calculate_crop_area(im.size, (size_frame))
     im = im.resize(size_frame, resample=PIL.Image.LANCZOS, box=crop)
     return im 
+
+
+def to_pi_bmp(im):
+    """Image envoyee au Pi (POST /picture), selon PI_BMP_MODE (defaut "1bit").
+
+    "1bit" : BMP 1 bit/pixel (~47 Ko au lieu de ~1,1 Mo en RGB).
+    Le pilote du Pi (epd7in5_V2, noir/blanc) reduit de toute facon l'image a
+    1 bit/pixel : paste() dans une image mode '1' puis getbuffer() -> convert('1').
+    Faire ce convert('1') ici donne un ecran identique au pixel pres (verifie le
+    2026-11-05 sur 60 paires, serveur x86 et Pi armv7, Pillow 9.1.0 des deux cotes).
+
+    "rgb" : ancien comportement (BMP RGB 24 bits). Fallback : mettre
+    PI_BMP_MODE: "rgb" dans /opt/smartframe/docker-compose.prod.yml puis
+    recreer api-server. A utiliser si le Pi passe sur un pilote couleur
+    ou niveaux de gris (ex. epd7in5b, getbuffer_4Gray), ou si sa version de
+    Pillow change.
+    """
+    import os
+    if os.getenv("PI_BMP_MODE", "1bit").strip().lower() == "rgb":
+        return im
+    return im.convert("1")
