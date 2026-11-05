@@ -72,10 +72,14 @@ FRAME_ERROR_CODES = {
 }
 
 
-# Envoi d'une image au Pi : le Pi ne repond qu'apres le rafraichissement complet
-# de l'e-paper (10-25 s mesures le 2026-11-05). 45 s laisse de la marge tout en
-# restant sous le proxy_read_timeout (60 s) du nginx de la webapp.
-PI_PICTURE_TIMEOUT = (5, 45)
+# Envoi d'une image au Pi : (phase connexion + envoi du fichier, attente reponse).
+# - 1er terme : urllib3 l'applique a la connexion ET a chaque ecriture pendant
+#   l'envoi du BMP (~1,15 Mo). Sur ligne domestique saturee (~1 Mbit/s, latence
+#   jusqu'a 450 ms le 2026-11-05) l'envoi calait > 5 s -> echec. 30 s.
+# - 2e terme : le Pi ne repond qu'apres le rafraichissement e-paper. 45 s.
+# Pire cas cadre injoignable (3 essais) : 3 x 30 + 2 x 5 = 100 s < 120 s des
+# appels internes vers /api/eventtoframe.
+PI_PICTURE_TIMEOUT = (30, 45)
 
 _UNREACHABLE_MARKERS = ("NewConnectionError", "Failed to establish", "Connection refused",
                         "No route to host", "Name or service not known", "Network is unreachable")
