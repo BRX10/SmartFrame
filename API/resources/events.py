@@ -3,7 +3,7 @@ from flask_restful import Resource
 from flask import request
 from database.models import Librarys, EventsLog, Frames, Pictures, User
 from mongoengine.errors import FieldDoesNotExist, ValidationError
-from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError, classify_frame_error
+from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError, classify_frame_error, frame_unreachable, PI_PICTURE_TIMEOUT
 from datetime import datetime
 from resources.draw_image import convert_image_raspberry
 from slugify import slugify
@@ -71,7 +71,7 @@ class Post_To_Frame(Resource):
                         ## Envoie de la requete au client/server
                         payload = {'key': frame.key}
                         file_picture = {"bmp": open(name_file,'rb')}
-                        requests.post("http://"+frame.ip+"/picture", files=file_picture, data=payload, timeout=(5, 25))
+                        requests.post("http://"+frame.ip+"/picture", files=file_picture, data=payload, timeout=PI_PICTURE_TIMEOUT)
 
                         ## On envoie le log + statut frame OK + compteur affichage
                         EventsLog(type_event="server", frame=frame, library=library, picture=picture, is_delete=False).save()
@@ -82,8 +82,12 @@ class Post_To_Frame(Resource):
 
                     except Exception as e:
                         last_exception = e
-                        if attempt < MAX_RETRIES:
+                        # Renvoi uniquement si le cadre etait injoignable : s'il est
+                        # juste lent, il affiche peut-etre encore -> pas de second envoi
+                        if attempt < MAX_RETRIES and frame_unreachable(e):
                             time.sleep(RETRY_DELAY)
+                        else:
+                            break
 
                 if last_exception:
                     code = classify_frame_error(last_exception)
@@ -173,7 +177,7 @@ class Post_To_Frame_ImageUser(Resource):
                     ## Envoie de la requete au client/server
                     payload = {'key': frame.key}
                     file_picture = {"bmp": open(name_file,'rb')}
-                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=30)
+                    requests.post("http://"+frame.ip+"/picture", files = file_picture, data=payload, timeout=PI_PICTURE_TIMEOUT)
 
                     ## On envoie le log + compteur affichage
                     EventsLog(

@@ -30,7 +30,7 @@ def _send_image_to_frame(frame_id, library_id):
             'http://127.0.0.1:8080/api/eventtoframe',
             headers={'Authorization': auth},
             data={'frame': frame_id, 'library': library_id},
-            timeout=(5, 30)
+            timeout=(5, 120)  # > attente Pi (45 s) + renvois sur cadre injoignable
         )
         logger.info(f"[SCHEDULER] Image envoyee: frame={frame_id} library={library_id}")
     except Exception as e:

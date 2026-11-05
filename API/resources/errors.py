@@ -72,6 +72,32 @@ FRAME_ERROR_CODES = {
 }
 
 
+# Envoi d'une image au Pi : le Pi ne repond qu'apres le rafraichissement complet
+# de l'e-paper (10-25 s mesures le 2026-11-05). 45 s laisse de la marge tout en
+# restant sous le proxy_read_timeout (60 s) du nginx de la webapp.
+PI_PICTURE_TIMEOUT = (5, 45)
+
+_UNREACHABLE_MARKERS = ("NewConnectionError", "Failed to establish", "Connection refused",
+                        "No route to host", "Name or service not known", "Network is unreachable")
+
+
+def frame_unreachable(exc):
+    """True si la connexion au cadre n'a pas pu etre etablie (renvoi utile).
+
+    False si la connexion etait etablie (cadre lent, coupure en cours de reponse) :
+    le cadre est peut-etre encore en train d'afficher, un renvoi lancerait un
+    second affichage concurrent sur l'e-paper (risque de blocage, cf. 2026-11-05).
+    """
+    import requests
+    if isinstance(exc, requests.exceptions.ConnectTimeout):
+        return True
+    if isinstance(exc, requests.exceptions.ReadTimeout):
+        return False
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return any(m in str(exc) for m in _UNREACHABLE_MARKERS)
+    return False
+
+
 def classify_frame_error(exc):
     """Mappe une exception requests vers un code d'erreur structure."""
     import requests
@@ -80,6 +106,10 @@ def classify_frame_error(exc):
     if isinstance(exc, requests.exceptions.ReadTimeout):
         return "FRAME_TIMEOUT"
     if isinstance(exc, requests.exceptions.ConnectionError):
+        if frame_unreachable(exc):
+            return "FRAME_REFUSED"
+        if "timed out" in str(exc):
+            return "FRAME_TIMEOUT"
         return "FRAME_REFUSED"
     return "FRAME_UNKNOWN"
 

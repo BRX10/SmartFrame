@@ -14,7 +14,7 @@ from flask_restful import Resource
 from flask import request
 from database.models import Frames, EventsLog
 from mongoengine.errors import FieldDoesNotExist, ValidationError
-from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError
+from resources.errors import SchemaValidationError, InternalServerError, ExpiredSignatureError, PI_PICTURE_TIMEOUT
 from resources.music_renderer import render_now_playing
 from resources.enrichment import enrich_track
 from resources.music_masks import get_mask_ids
@@ -118,7 +118,7 @@ class FrameMusicAPI(Resource):
                     file_picture = {"bmp": open(name_file, 'rb')}
                     http_requests.post(
                         f"http://{frame.ip}/picture",
-                        files=file_picture, data=payload, timeout=(5, 25)
+                        files=file_picture, data=payload, timeout=PI_PICTURE_TIMEOUT
                     )
                     frame.update(
                         last_success_at=datetime.utcnow(),
@@ -202,7 +202,7 @@ class FrameMusicAPI(Resource):
                     'frame': str(frame.id),
                     'library': str(frame.library_display.id)
                 },
-                timeout=(5, 30)
+                timeout=(5, 120)
             )
             frame.update(unset__music_now_playing=True)
             EventsLog(

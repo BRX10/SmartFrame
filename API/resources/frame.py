@@ -67,7 +67,7 @@ def _send_to_frame_async(frame_id, library_id, auth_header):
             'http://127.0.0.1:8080/api/eventtoframe',
             headers={'Authorization': auth_header},
             data={'frame': frame_id, 'library': library_id},
-            timeout=(3, 30)
+            timeout=(3, 120)
         )
     except Exception:
         pass  # erreurs deja loggees dans events.py via last_error_at
