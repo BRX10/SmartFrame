@@ -22,8 +22,31 @@ logger = logging.getLogger(__name__)
 scheduler = BackgroundScheduler(daemon=True)
 
 
+# (2026-11-06) Pas de rotation photo pendant la musique : la rotation ecrasait
+# l'ecran Now Playing (photo de la bibliotheque affichee entre deux morceaux).
+# Garde-fou : si le listener ne signale plus rien depuis MUSIC_HOLD_MIN
+# (pause longue, Pi arrete sans DELETE), la rotation reprend.
+MUSIC_HOLD_MIN = 30
+
+
+def _music_is_playing(frame_id):
+    from database.models import Frames
+    frame = Frames.objects(id=frame_id).only(
+        'music_mode_enabled', 'music_now_playing', 'last_success_at').first()
+    if not frame or not frame.music_mode_enabled or not frame.music_now_playing:
+        return False
+    last = frame.last_success_at
+    return bool(last and datetime.utcnow() - last < timedelta(minutes=MUSIC_HOLD_MIN))
+
+
 def _send_image_to_frame(frame_id, library_id):
     """Appelle POST /api/eventtoframe en loopback pour declencher la rotation."""
+    try:
+        if _music_is_playing(frame_id):
+            logger.info(f"[SCHEDULER] Rotation suspendue (musique en cours): frame={frame_id}")
+            return
+    except Exception as e:
+        logger.warning(f"[SCHEDULER] Verification musique impossible ({e}), rotation maintenue")
     try:
         auth = os.getenv("AUTH")
         requests.post(

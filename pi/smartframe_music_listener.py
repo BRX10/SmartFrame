@@ -47,6 +47,7 @@ CHROMECAST_NAME = os.getenv("CHROMECAST_NAME", "")
 CHROMECAST_UUID = os.getenv("CHROMECAST_UUID", "")  # prioritaire sur le nom (stable au renommage)
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "5"))
 IDLE_TIMEOUT = int(os.getenv("IDLE_TIMEOUT", "120"))
+PAUSE_TIMEOUT = int(os.getenv("PAUSE_TIMEOUT", "600"))  # pause plus longue = fin d'ecoute
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
 # ── Logging ──────────────────────────────────────────────────────────────────
@@ -179,6 +180,8 @@ class ChromecastListener:
     STATUS_REFRESH_S = 30
     # Lecture du choix d'enceinte fait dans l'app (GET /frame/<id>/music)
     CONFIG_REFRESH_S = 60
+    # Ecran d'attente Cast (aucune appli reelle)
+    BACKDROP_APP_ID = "E8C28D3C"
 
     def __init__(self, chromecast_name: str, client: SmartFrameClient, chromecast_uuid: str = ""):
         self.chromecast_name = chromecast_name
@@ -198,6 +201,8 @@ class ChromecastListener:
         self._status_asked: dict = {}    # uuid -> derniere demande update_status
         self._source: str = ""           # nom de l'appareil qui fournit le morceau
         self._config_checked_at: float = 0.0
+        self._paused_fp: str = ""        # morceau en pause (et depuis quand)
+        self._paused_since: float = 0.0
         self._published: list = []       # derniere liste publiee a l'API
 
     # ── Decouverte ──
@@ -375,6 +380,10 @@ class ChromecastListener:
             cast = self._casts.get(u)
             if cast is None:
                 continue
+            if not cast.app_id or cast.app_id == self.BACKDROP_APP_ID:
+                # (2026-11-06) Plus d'appli lancee : pychromecast garde le dernier
+                # etat media (PAUSED + titre) -> le cadre restait sur la pochette.
+                continue
             track = self._extract_track(cast.media_controller)
             if not track.title and not track.artist:
                 # Appli lancee mais etat media pas encore recu : on le redemande
@@ -386,13 +395,22 @@ class ChromecastListener:
                         pass
                 continue
             if track.is_playing():
+                self._paused_fp = ""
                 self._set_source(cast.name)
                 return track
             if track.state == "PAUSED" and paused is None:
                 paused = (track, cast.name)
         if paused:
-            self._set_source(paused[1])
-            return paused[0]
+            # Pause prolongee = fin d'ecoute : on la traite comme un arret
+            # (le timer idle habituel s'applique ensuite)
+            fp = paused[0].fingerprint()
+            if self._paused_fp != fp:
+                self._paused_fp, self._paused_since = fp, time.time()
+            if time.time() - self._paused_since < PAUSE_TIMEOUT:
+                self._set_source(paused[1])
+                return paused[0]
+            return TrackInfo(state="IDLE")
+        self._paused_fp = ""
         return TrackInfo(state="IDLE")
 
     def _set_source(self, name: str):
