@@ -126,20 +126,28 @@ def _fetch_audiodb(title, artist):
 # assez grand. Un modele retire (404) ou bloque (403) est ecarte pour 6 h.
 # Le LLM repond en JSON (theme + 3 lignes candidates + choix) ; on ne garde
 # qu'une ligne presente mot pour mot dans les paroles.
+# (2026-11-06) Et qui ne reprend pas le titre, deja affiche au-dessus : 57 % des
+# phrases en cache le repetaient (« Who do you think you are? »...).
 
 _DEFAULT_SYSTEM_PROMPT = (
-    "Tu es un curateur musical. On te donne les paroles completes d'une chanson.\n"
-    "Ta tache : trouver la ligne qui resume le mieux ce que la chanson raconte, "
-    "pour l'afficher seule, en citation, sur un cadre photo.\n\n"
+    "Tu es un curateur musical. On te donne le titre et les paroles completes d'une chanson.\n"
+    "Sur un cadre photo, le TITRE est deja affiche en gros. Sous lui, on affiche UNE "
+    "citation tiree des paroles. Ta tache : trouver la ligne qui complete le titre, "
+    "pas celle qui le repete. Elle doit donner envie, surprendre ou emouvoir : une "
+    "image forte, un tournant de l'histoire, l'aveu ou la verite au coeur de la "
+    "chanson, la ligne qui explique ce que le titre veut dire.\n\n"
     "Methode :\n"
     "1. Lis toutes les paroles et resume en une phrase courte le theme ou l'histoire "
     "de la chanson (dans la langue des paroles).\n"
-    "2. Choisis 3 lignes candidates qui expriment ce theme. Recopie-les MOT POUR MOT "
+    "2. Choisis 5 lignes candidates qui portent ce theme. Recopie-les MOT POUR MOT "
     "depuis les paroles : n'invente rien, ne reformule pas, ne traduis pas. "
-    "Tu peux reunir deux lignes consecutives si elles forment une seule idee.\n"
-    "3. Choisis la meilleure : celle qui a du sens seule, sans contexte, et qui "
-    "capture l'emotion ou le propos de la chanson. Le refrain n'est pas un choix "
-    "automatique : prefere-le seulement s'il porte vraiment le sens.\n\n"
+    "Tu peux reunir deux lignes consecutives si elles forment une seule idee. "
+    "Au moins 3 candidates doivent venir des couplets ou du pont, pas du refrain.\n"
+    "3. Choisis la meilleure : celle qui a du sens seule, sans contexte, et qui fait "
+    "ressentir le coeur de la chanson a quelqu'un qui vient de lire le titre.\n\n"
+    "Interdit : toute ligne qui contient le titre, ou la plupart de ses mots "
+    "(ex. pour « Firework », pas de « Baby, you're a firework »). Le refrain qui "
+    "repete le titre est donc exclu.\n"
     "Contraintes : 60 caracteres maximum par candidate, langue originale des paroles, "
     "pas de guillemets, pas d'onomatopees (oh, yeah, na na...), pas de ligne qui ne "
     "veut rien dire hors contexte."
@@ -148,9 +156,17 @@ _DEFAULT_SYSTEM_PROMPT = (
 # Ajoute par le code (non modifiable depuis l'UI) pour garantir un JSON exploitable
 _JSON_INSTRUCTIONS = (
     "\n\nReponds UNIQUEMENT avec un objet JSON de la forme :\n"
-    '{"theme": "...", "candidates": ["...", "...", "..."], "choice": "..."}\n'
+    '{"theme": "...", "candidates": ["...", "...", "...", "...", "..."], "choice": "..."}\n'
     "ou choice est l'une des candidates."
 )
+
+# Mots trop courants pour signer une reprise du titre
+_TITLE_STOPWORDS = {
+    "the", "a", "an", "i", "im", "me", "my", "you", "your", "to", "and", "of", "in", "on",
+    "it", "is", "be", "for", "do", "we", "so", "up", "all", "what", "who",
+    "le", "la", "les", "un", "une", "des", "de", "du", "et", "je", "tu", "il", "elle",
+    "on", "nous", "vous", "ma", "mon", "mes", "ton", "ta", "tes", "en", "au", "aux", "que",
+}
 
 _DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 _PREFERRED_MODELS = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "llama-3.3-70b-versatile"]
@@ -244,11 +260,50 @@ def _tidy(hook):
     return hook.strip(" ,;-") or hook
 
 
-def _pick_verified(result, lyrics):
-    """Premiere ligne (choix puis candidates) retrouvee dans les paroles -> (hook, verifie)."""
+def _clean_title(title):
+    """Titre sans (feat. ...), [Remix], '- Remastered'... pour la comparaison."""
+    import re
+    t = re.sub(r"\s*[\(\[].*?[\)\]]", "", title or "")
+    t = re.sub(r"\s+-\s+.*$", "", t)
+    return t.strip() or (title or "")
+
+
+def repeats_title(line, title):
+    """True si la ligne reprend le titre (2026-11-06) : le titre est deja affiche
+    au-dessus de la citation, la repeter n'apporte rien.
+    Regle : titre entier contenu dans la ligne, ou >= 60 % de ses mots
+    significatifs (tous s'il n'y en a qu'un ou deux)."""
+    norm_title = _normalize(_clean_title(title))
+    norm_line = _normalize(line)
+    if not norm_title or not norm_line:
+        return False
+    if f" {norm_title} " in f" {norm_line} ":
+        return True
+    words = {w for w in norm_title.split() if w not in _TITLE_STOPWORDS and len(w) > 1}
+    if not words:
+        return False
+    line_words = set(norm_line.split())
+    shared = len(words & line_words)
+    if len(words) <= 2:
+        return shared == len(words)
+    return shared / len(words) >= 0.6
+
+
+def _pick_verified(result, lyrics, title=""):
+    """Premiere ligne (choix puis candidates) retrouvee dans les paroles et qui ne
+    reprend pas le titre -> (hook, verifie). Si toutes reprennent le titre, on
+    garde la premiere verifiee (mieux que rien) en le signalant."""
     norm_lyrics = _normalize(lyrics.replace("\n", " "))
     options = [result.get("choice", "")] + list(result.get("candidates") or [])
     options = [o.strip().strip('"\'«»“”').strip() for o in options if isinstance(o, str) and o.strip()]
+    verified = [o for o in options
+                if len(o) <= _MAX_HOOK_LEN and _normalize(o) and _normalize(o) in norm_lyrics]
+    for option in verified:
+        if not repeats_title(option, title):
+            return _tidy(option), True
+    if verified:
+        logger.warning(f"[ENRICH] Toutes les candidates reprennent le titre '{title}', garde: {verified[0]}")
+        return _tidy(verified[0]), True
     for option in options:
         if len(option) <= _MAX_HOOK_LEN and _normalize(option) and _normalize(option) in norm_lyrics:
             return _tidy(option), True
@@ -316,7 +371,7 @@ def _extract_hook(lyrics, title, artist):
                 logger.warning(f"[ENRICH] Groq {resp.status_code} ({model}): {resp.text[:200]}")
                 continue
             result = _parse_json(resp.json()["choices"][0]["message"]["content"])
-            hook, verified = _pick_verified(result, clean_lyrics)
+            hook, verified = _pick_verified(result, clean_lyrics, title)
             if not hook:
                 logger.warning(f"[ENRICH] Groq ({model}): reponse sans phrase: {result}")
                 continue
