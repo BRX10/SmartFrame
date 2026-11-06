@@ -29,6 +29,72 @@ import io
 logger = logging.getLogger(__name__)
 
 
+CAST_TYPES = ("audio", "cast", "group")
+MAX_CAST_DEVICES = 50
+
+
+def _clean_str(value, max_len=100):
+    return str(value or "").strip()[:max_len]
+
+
+class FrameCastDevicesAPI(Resource):
+    """Appareils Cast vus par le Pi sur le reseau local (2026-11-06).
+
+    PUT /api/frame/<id>/cast-devices  — le listener Pi publie sa liste
+        body JSON : {"devices": [{"uuid", "name", "type", "host"}]}
+    GET /api/frame/<id>/cast-devices  — liste + enceinte choisie (webapp)
+    Le VPS ne peut pas scanner le LAN : seul le Pi voit les enceintes.
+    """
+
+    @jwt_required()
+    def get(self, id):
+        try:
+            frame = Frames.objects.get(id=id)
+            return {
+                "devices": frame.music_cast_devices or [],
+                "updated_at": frame.music_cast_devices_at.isoformat() + "Z" if frame.music_cast_devices_at else None,
+                "selected_uuid": frame.music_chromecast_uuid or "",
+                "selected_name": frame.music_chromecast_name or "",
+            }, 200
+        except Frames.DoesNotExist:
+            return {"message": "Cadre introuvable"}, 404
+        except Exception as e:
+            logging.exception(e)
+            raise InternalServerError
+
+    @jwt_required()
+    def put(self, id):
+        try:
+            frame = Frames.objects.get(id=id)
+            data = request.get_json(silent=True) or {}
+            raw = data.get("devices")
+            if not isinstance(raw, list):
+                return {"message": "devices (liste) requis"}, 400
+            devices, seen = [], set()
+            for d in raw[:MAX_CAST_DEVICES]:
+                if not isinstance(d, dict):
+                    continue
+                uuid = _clean_str(d.get("uuid"), 64).lower()
+                if not uuid or uuid in seen:
+                    continue
+                seen.add(uuid)
+                dtype = _clean_str(d.get("type"), 16)
+                devices.append({
+                    "uuid": uuid,
+                    "name": _clean_str(d.get("name")),
+                    "type": dtype if dtype in CAST_TYPES else "cast",
+                    "host": _clean_str(d.get("host"), 64),
+                })
+            devices.sort(key=lambda x: (x["type"] == "group", x["name"].lower()))
+            frame.update(music_cast_devices=devices, music_cast_devices_at=datetime.utcnow())
+            return {"count": len(devices)}, 200
+        except Frames.DoesNotExist:
+            return {"message": "Cadre introuvable"}, 404
+        except Exception as e:
+            logging.exception(e)
+            raise InternalServerError
+
+
 class FrameMusicAPI(Resource):
 
     @jwt_required()
@@ -41,6 +107,7 @@ class FrameMusicAPI(Resource):
                 "music_idle_timeout": frame.music_idle_timeout or 120,
                 "music_mask": frame.music_mask or "poster",
                 "music_chromecast_name": frame.music_chromecast_name or "",
+                "music_chromecast_uuid": frame.music_chromecast_uuid or "",
                 "music_display_scale": frame.music_display_scale or 100,
                 "available_masks": get_mask_ids()
             }, 200

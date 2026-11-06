@@ -134,6 +134,18 @@ class SmartFrameClient:
             log.error(f"Erreur API DELETE: {e}")
             return False
 
+    def put_cast_devices(self, devices: list) -> bool:
+        """Publie la liste des appareils Cast vus sur le LAN (choix dans l'app)."""
+        try:
+            resp = self.session.put(self.url.rsplit("/", 1)[0] + "/cast-devices",
+                                    json={"devices": devices}, timeout=15)
+            if resp.status_code != 200:
+                log.warning(f"API cast-devices {resp.status_code}: {resp.text[:200]}")
+            return resp.status_code == 200
+        except requests.RequestException as e:
+            log.warning(f"Erreur API cast-devices: {e}")
+            return False
+
     def get_config(self) -> Optional[dict]:
         """GET la config musique du cadre."""
         try:
@@ -165,6 +177,8 @@ class ChromecastListener:
     GROUP_REFRESH_S = 600
     # Relance d'une demande d'etat media si une appli tourne sans etat connu
     STATUS_REFRESH_S = 30
+    # Lecture du choix d'enceinte fait dans l'app (GET /frame/<id>/music)
+    CONFIG_REFRESH_S = 60
 
     def __init__(self, chromecast_name: str, client: SmartFrameClient, chromecast_uuid: str = ""):
         self.chromecast_name = chromecast_name
@@ -183,6 +197,8 @@ class ChromecastListener:
         self._groups_checked_at: float = 0.0
         self._status_asked: dict = {}    # uuid -> derniere demande update_status
         self._source: str = ""           # nom de l'appareil qui fournit le morceau
+        self._config_checked_at: float = 0.0
+        self._published: list = []       # derniere liste publiee a l'API
 
     # ── Decouverte ──
 
@@ -255,6 +271,49 @@ class ChromecastListener:
             self._mz.pop(u, None)
             self._casts.pop(u).disconnect(blocking=False)
 
+    def _publish_devices(self):
+        """Envoie a l'API la liste des appareils Cast vus (pour la liste de l'app)."""
+        devices = sorted(
+            ({"uuid": u, "name": (i.friendly_name or "").strip(),
+              "type": "group" if self._is_group(i) else (getattr(i, "cast_type", None) or "cast"),
+              "host": getattr(i, "host", "") or ""}
+             for u, i in self._devices().items()),
+            key=lambda d: d["uuid"])
+        if not devices:
+            return
+        # mDNS est capricieux : on fusionne avec la liste precedente pour ne pas
+        # faire disparaitre un appareil absent d'un seul scan
+        known = {d["uuid"]: d for d in self._published}
+        known.update({d["uuid"]: d for d in devices})
+        merged = sorted(known.values(), key=lambda d: d["uuid"])
+        if self.client.put_cast_devices(merged):
+            if merged != self._published:
+                log.info(f"Liste des enceintes publiee ({len(merged)} appareils)")
+            self._published = merged
+
+    def _check_config(self):
+        """Suit le choix d'enceinte fait dans l'app (prioritaire sur le .env)."""
+        self._config_checked_at = time.time()
+        cfg = self.client.get_config() or {}
+        wanted = (cfg.get("music_chromecast_uuid") or "").strip().lower()
+        if not wanted or wanted == self.target_uuid:
+            return
+        log.info(f"Nouvelle enceinte choisie dans l'app: '{cfg.get('music_chromecast_name', '')}' ({wanted})")
+        if self._last_state in ("PLAYING", "BUFFERING", "PAUSED"):
+            self.client.send_idle()
+        for cast in self._casts.values():
+            cast.disconnect(blocking=False)
+        self._casts.clear()
+        self._mz.clear()
+        self._last_fingerprint, self._last_state, self._source = "", "IDLE", ""
+        self._idle_since, self._idle_sent, self._idle_consecutive = None, False, 0
+        self.target_uuid = wanted
+        self.chromecast_name = cfg.get("music_chromecast_name") or self.chromecast_name
+        if self._resolve_target():
+            self._refresh_groups()
+        else:
+            self._groups_checked_at = 0.0  # on reessaiera au prochain tour
+
     def start(self):
         """Demarre la decouverte et l'ecoute de l'enceinte + ses groupes."""
         try:
@@ -273,11 +332,22 @@ class ChromecastListener:
         # Boucle de polling (plus fiable que les callbacks pour e-paper)
         try:
             time.sleep(10)  # laisser mDNS remplir la liste
-            while self._running and not self._resolve_target():
+            self._publish_devices()
+            # Choix fait dans l'app prioritaire sur le .env
+            cfg_uuid = ((self.client.get_config() or {}).get("music_chromecast_uuid") or "").strip().lower()
+            if cfg_uuid:
+                self.target_uuid = cfg_uuid
+            self._config_checked_at = time.time()
+            while self._running and self.target_uuid not in self._casts and not self._resolve_target():
                 time.sleep(60)  # rester en vie : l'enceinte peut revenir (pas de boucle de restart)
+                self._publish_devices()
+                self._check_config()
             while self._running:
                 if time.time() - self._groups_checked_at > self.GROUP_REFRESH_S:
                     self._refresh_groups()
+                    self._publish_devices()
+                if time.time() - self._config_checked_at > self.CONFIG_REFRESH_S:
+                    self._check_config()
                 self._poll()
                 time.sleep(POLL_INTERVAL)
         except KeyboardInterrupt:

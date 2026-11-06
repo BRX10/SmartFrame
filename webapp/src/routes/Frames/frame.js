@@ -38,6 +38,9 @@ export default function Frame(props) {
     const [musicMask, setMusicMask] = useState("poster");
     const [availableMasks, setAvailableMasks] = useState([]);
     const [musicChromecast, setMusicChromecast] = useState("");
+    const [musicChromecastUuid, setMusicChromecastUuid] = useState("");
+    const [castDevices, setCastDevices] = useState([]);
+    const [castDevicesAt, setCastDevicesAt] = useState(null);
     const [musicDisplayScale, setMusicDisplayScale] = useState(100);
     const [savingMusic, setSavingMusic] = useState(false);
 
@@ -58,6 +61,9 @@ export default function Frame(props) {
                     setMusicMask(frame.music_mask || "poster");
                     setAvailableMasks(frame.available_masks || ["poster", "minimal", "fullart"]);
                     setMusicChromecast(frame.music_chromecast_name || "");
+                    setMusicChromecastUuid(frame.music_chromecast_uuid || "");
+                    setCastDevices(frame.music_cast_devices || []);
+                    setCastDevicesAt(frame.music_cast_devices_at || null);
                     setMusicDisplayScale(frame.music_display_scale || 100);
                     setContrastPhoto(frame.contrast_boost_photo !== undefined ? frame.contrast_boost_photo : true);
                     setContrastMusic(frame.contrast_boost_music !== undefined ? frame.contrast_boost_music : true);
@@ -134,6 +140,38 @@ export default function Frame(props) {
                 setTypeAlertModal("error");
                 setMessageAlertModal("Erreur : " + error.message);
             });
+    }
+
+    function selectCastDevice(uuid) {
+        const dev = castDevices.find(d => d.uuid === uuid);
+        setMusicChromecastUuid(uuid);
+        if (dev) setMusicChromecast(dev.name);
+        setSavingMusic(true);
+        setAlertModal(false);
+        UpdateFrame(props.token, frameModal._id.$oid, {
+            music_chromecast_uuid: uuid,
+            ...(dev ? { music_chromecast_name: dev.name } : {}),
+        })
+            .then(() => {
+                setSavingMusic(false);
+                setAlertModal(true);
+                setTypeAlertModal("sucess");
+                setMessageAlertModal(dev ? `Enceinte « ${dev.name} » enregistrée (prise en compte par le cadre sous 1 min)` : "Enceinte réinitialisée");
+                if (props.onUpdate) props.onUpdate();
+            }, (error) => {
+                setSavingMusic(false);
+                setAlertModal(true);
+                setTypeAlertModal("error");
+                setMessageAlertModal("Erreur : " + error.message);
+            });
+    }
+
+    function castDevicesAge() {
+        if (!castDevicesAt) return null;
+        const min = Math.round((Date.now() - new Date(castDevicesAt).getTime()) / 60000);
+        if (min < 1) return "à l'instant";
+        if (min < 60) return `il y a ${min} min`;
+        return `il y a ${Math.round(min / 60)} h`;
     }
 
     function toggleMusic() {
@@ -420,6 +458,31 @@ export default function Frame(props) {
                                 {/* Nom du Chromecast */}
                                 <div>
                                     <label className="text-xs text-zinc-500 block mb-1">Enceinte Chromecast</label>
+                                    {castDevices.filter(d => d.type !== "group").length > 0 ? (
+                                        <>
+                                            <select
+                                                value={musicChromecastUuid}
+                                                onChange={e => selectCastDevice(e.target.value)}
+                                                disabled={savingMusic}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
+                                            >
+                                                {!musicChromecastUuid && (
+                                                    <option value="">{musicChromecast ? `${musicChromecast} (réglage du Pi)` : "Choisir une enceinte…"}</option>
+                                                )}
+                                                {musicChromecastUuid && !castDevices.some(d => d.uuid === musicChromecastUuid) && (
+                                                    <option value={musicChromecastUuid}>{musicChromecast || "Enceinte"} (non détectée)</option>
+                                                )}
+                                                {castDevices.filter(d => d.type !== "group").map(d => (
+                                                    <option key={d.uuid} value={d.uuid}>{d.name}{d.host ? ` — ${d.host}` : ""}</option>
+                                                ))}
+                                            </select>
+                                            <p className="text-[10px] text-zinc-600 mt-1">
+                                                Enceintes détectées par le cadre{castDevicesAge() ? ` (${castDevicesAge()})` : ""}.
+                                                Les groupes qui la contiennent (ex. « Toute la maison ») sont suivis automatiquement.
+                                            </p>
+                                        </>
+                                    ) : (
+                                    <>
                                     <div className="flex items-center gap-2">
                                         <input
                                             type="text"
@@ -435,7 +498,9 @@ export default function Frame(props) {
                                             className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
                                         />
                                     </div>
-                                    <p className="text-[10px] text-zinc-600 mt-1">Nom exact tel qu'il apparaît dans Google Home (ou nom du groupe)</p>
+                                    <p className="text-[10px] text-zinc-600 mt-1">Aucune enceinte détectée par le cadre pour l'instant : nom tel qu'il apparaît dans Google Home</p>
+                                    </>
+                                    )}
                                 </div>
                             </div>
                         )}

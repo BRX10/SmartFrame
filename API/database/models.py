@@ -44,6 +44,11 @@ class Frames(db.Document):
     music_idle_timeout = db.IntField(default=120)   # secondes avant retour photo
     music_mask = db.StringField(default="poster")   # masque visuel Now Playing
     music_chromecast_name = db.StringField()        # nom du Chromecast a ecouter (ex: "Nest Mini salon")
+    # (2026-11-06) Choix de l'enceinte dans l'app : UUID Cast (stable au renommage)
+    # + liste des appareils Cast vus par le Pi (PUT /api/frame/<id>/cast-devices)
+    music_chromecast_uuid = db.StringField()
+    music_cast_devices = db.ListField(db.DictField())   # [{uuid, name, type, host}]
+    music_cast_devices_at = db.DateTimeField()
     music_display_scale = db.IntField(default=100)   # % de l'ecran utilise pour le rendu musique (50-100)
     # Contraste e-paper (dissocié photos/musique)
     contrast_boost_photo = db.BooleanField(default=True)

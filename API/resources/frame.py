@@ -152,6 +152,9 @@ class FrameAPI(Resource):
             frame_dict['music_idle_timeout'] = frame.music_idle_timeout or 120
             frame_dict['music_mask'] = frame.music_mask or "poster"
             frame_dict['music_chromecast_name'] = frame.music_chromecast_name or ""
+            frame_dict['music_chromecast_uuid'] = frame.music_chromecast_uuid or ""
+            frame_dict['music_cast_devices'] = frame.music_cast_devices or []
+            frame_dict['music_cast_devices_at'] = (frame.music_cast_devices_at.isoformat() + "Z") if frame.music_cast_devices_at else None
             frame_dict['available_masks'] = get_mask_ids()
             frame_dict['contrast_boost_photo'] = frame.contrast_boost_photo if frame.contrast_boost_photo is not None else True
             frame_dict['contrast_boost_music'] = frame.contrast_boost_music if frame.contrast_boost_music is not None else True
@@ -205,6 +208,13 @@ class FrameAPI(Resource):
                     put_frame.update(music_mask=mask)
             if form.get("music_chromecast_name"):
                 put_frame.update(music_chromecast_name=form.get("music_chromecast_name").strip())
+            if "music_chromecast_uuid" in form:
+                # Choix dans la liste des enceintes vues par le Pi ; "" = revenir au .env du Pi
+                cc_uuid = form.get("music_chromecast_uuid", "").strip().lower()[:64]
+                put_frame.update(music_chromecast_uuid=cc_uuid)
+                known = {d.get("uuid"): d.get("name") for d in (put_frame.music_cast_devices or [])}
+                if cc_uuid in known and not form.get("music_chromecast_name"):
+                    put_frame.update(music_chromecast_name=known[cc_uuid])
             if form.get("music_display_scale"):
                 scale = max(50, min(100, int(form.get("music_display_scale"))))
                 put_frame.update(music_display_scale=scale)

@@ -5,7 +5,7 @@ from resources.picture import PictureAPI, PicturesAPI, PictureFileAPI, PictureFi
 from resources.eventsLog import EventsLogAPI
 from resources.eventsArduinoLog import EventsArduinoLogAPI, EventsArduinoLogPaginateAPI
 from resources.events import Post_To_Frame, Post_To_Frame_ImageUser
-from resources.music import FrameMusicAPI
+from resources.music import FrameMusicAPI, FrameCastDevicesAPI
 from resources.settings import EnrichmentSettingsAPI
 from resources.activity import ActivityAPI
 
@@ -34,6 +34,7 @@ def initialize_routes(api, app):
     api.add_resource(FramesAPI, '/api/frames')
     api.add_resource(SchedulerAPI, '/api/scheduler')
     api.add_resource(FrameMusicAPI, '/api/frame/<id>/music')
+    api.add_resource(FrameCastDevicesAPI, '/api/frame/<id>/cast-devices')
 
     api.add_resource(EnrichmentSettingsAPI, '/api/settings/enrichment')
     api.add_resource(ActivityAPI, '/api/activity')
