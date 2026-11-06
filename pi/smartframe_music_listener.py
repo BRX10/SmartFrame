@@ -12,7 +12,8 @@ Configuration via variables d'environnement (ou fichier .env) :
     SMARTFRAME_API_URL   — ex: https://smartframe.knowhere.click
     SMARTFRAME_API_TOKEN — JWT Bearer token
     SMARTFRAME_FRAME_ID  — ID du cadre cible (ObjectId Mongo)
-    CHROMECAST_NAME      — nom exact du Chromecast (ex: "Nest Mini salon")
+    CHROMECAST_NAME      — nom de l'enceinte (ex: "GH Bureau"), casse/espaces ignores
+    CHROMECAST_UUID      — UUID Cast de l'enceinte (optionnel, prioritaire, stable au renommage)
     POLL_INTERVAL        — secondes entre deux verifications (defaut: 5)
     IDLE_TIMEOUT         — secondes avant de signaler IDLE (defaut: 120)
     LOG_LEVEL            — DEBUG, INFO, WARNING (defaut: INFO)
@@ -43,6 +44,7 @@ API_URL = os.getenv("SMARTFRAME_API_URL", "").rstrip("/")
 API_TOKEN = os.getenv("SMARTFRAME_API_TOKEN", "")
 FRAME_ID = os.getenv("SMARTFRAME_FRAME_ID", "")
 CHROMECAST_NAME = os.getenv("CHROMECAST_NAME", "")
+CHROMECAST_UUID = os.getenv("CHROMECAST_UUID", "")  # prioritaire sur le nom (stable au renommage)
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "5"))
 IDLE_TIMEOUT = int(os.getenv("IDLE_TIMEOUT", "120"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -146,10 +148,27 @@ class SmartFrameClient:
 # ── Chromecast Listener ──────────────────────────────────────────────────────
 
 class ChromecastListener:
-    """Ecoute un Chromecast et envoie les changements de piste a l'API."""
+    """Ecoute une enceinte Cast ET les groupes qui la contiennent.
 
-    def __init__(self, chromecast_name: str, client: SmartFrameClient):
+    (2026-11-06) En lecture « Toute la maison » (groupe multi-pieces), seul
+    le groupe porte les metadonnees (titre, artiste, pochette) : l'enceinte
+    membre reste a UNKNOWN. On suit donc l'enceinte + chacun de ses groupes,
+    et on retient le premier qui joue (l'enceinte d'abord). Un groupe qui ne
+    contient pas l'enceinte (ex. « 1er Etage ») est ignore.
+    L'enceinte est identifiee par son UUID Cast (stable si on la renomme) ;
+    le nom ne sert qu'a la trouver la premiere fois.
+    """
+
+    # Nombre minimum de polls consecutifs en idle avant de demarrer le timer
+    IDLE_CONFIRM_POLLS = 3
+    # Re-scan des groupes (creation / modification dans Google Home)
+    GROUP_REFRESH_S = 600
+    # Relance d'une demande d'etat media si une appli tourne sans etat connu
+    STATUS_REFRESH_S = 30
+
+    def __init__(self, chromecast_name: str, client: SmartFrameClient, chromecast_uuid: str = ""):
         self.chromecast_name = chromecast_name
+        self.target_uuid = chromecast_uuid.strip().lower()
         self.client = client
         self._last_fingerprint: str = ""
         self._last_state: str = "IDLE"
@@ -157,41 +176,108 @@ class ChromecastListener:
         self._idle_sent: bool = False
         self._idle_consecutive: int = 0  # polls consecutifs en idle
         self._running: bool = False
-        self._cast = None
+        self._zconf = None
         self._browser = None
+        self._casts: dict = {}           # uuid -> Chromecast suivi (enceinte + ses groupes)
+        self._mz: dict = {}              # uuid groupe -> MultizoneController (un seul par groupe)
+        self._groups_checked_at: float = 0.0
+        self._status_asked: dict = {}    # uuid -> derniere demande update_status
+        self._source: str = ""           # nom de l'appareil qui fournit le morceau
 
-    # Nombre minimum de polls consecutifs en idle avant de demarrer le timer
-    IDLE_CONFIRM_POLLS = 3
+    # ── Decouverte ──
+
+    @staticmethod
+    def _is_group(info) -> bool:
+        if getattr(info, "cast_type", None):
+            return info.cast_type == "group"
+        return getattr(info, "port", 8009) != 8009  # les groupes ecoutent sur un autre port
+
+    def _devices(self) -> dict:
+        return {str(u).lower(): info for u, info in list(self._browser.devices.items())}
+
+    def _resolve_target(self) -> bool:
+        """Trouve l'UUID de l'enceinte (par UUID, sinon par nom) et s'y connecte."""
+        import pychromecast
+        devices = self._devices()
+        if not self.target_uuid:
+            wanted = self.chromecast_name.strip().lower()
+            for u, info in devices.items():
+                if (info.friendly_name or "").strip().lower() == wanted and not self._is_group(info):
+                    self.target_uuid = u
+                    break
+        info = devices.get(self.target_uuid) if self.target_uuid else None
+        if not info:
+            names = sorted((i.friendly_name or "?").strip() for i in devices.values())
+            log.error(f"Enceinte '{self.chromecast_name}' {self.target_uuid or ''} introuvable — "
+                      f"vues sur le reseau: {', '.join(names) or 'aucune'}")
+            return False
+        cast = pychromecast.get_chromecast_from_cast_info(info, self._zconf)
+        cast.wait(timeout=15)
+        self._casts[self.target_uuid] = cast
+        log.info(f"Connecte a '{cast.name}' ({cast.cast_type}, uuid {self.target_uuid})")
+        return True
+
+    def _refresh_groups(self):
+        """Connecte les groupes qui contiennent l'enceinte, lache les autres."""
+        import pychromecast
+        from pychromecast.controllers.multizone import MultizoneController
+        self._groups_checked_at = time.time()
+        devices = self._devices()
+        keep = {self.target_uuid}
+        for u, info in devices.items():
+            if not self._is_group(info):
+                continue
+            cast = self._casts.get(u)
+            try:
+                if cast is None:
+                    cast = pychromecast.get_chromecast_from_cast_info(info, self._zconf)
+                    cast.wait(timeout=15)
+                mz = self._mz.get(u)
+                if mz is None:
+                    mz = self._mz[u] = MultizoneController(cast.uuid)
+                    cast.register_handler(mz)
+                mz.update_members()
+                time.sleep(2)
+                members = {str(m).lower() for m in mz.members}
+            except Exception as e:
+                log.debug(f"Groupe {info.friendly_name!r} illisible: {e}")
+                members = set()
+            if self.target_uuid in members:
+                keep.add(u)
+                if u not in self._casts:
+                    self._casts[u] = cast
+                    log.info(f"Groupe suivi: '{(info.friendly_name or '').strip()}'")
+            elif cast is not None and u not in self._casts:
+                self._mz.pop(u, None)
+                cast.disconnect(blocking=False)
+        for u in [u for u in self._casts if u not in keep]:
+            log.info(f"Groupe abandonne: '{self._casts[u].name}'")
+            self._mz.pop(u, None)
+            self._casts.pop(u).disconnect(blocking=False)
 
     def start(self):
-        """Demarre la decouverte et l'ecoute du Chromecast."""
+        """Demarre la decouverte et l'ecoute de l'enceinte + ses groupes."""
         try:
-            import pychromecast
+            import zeroconf
+            from pychromecast.discovery import CastBrowser, SimpleCastListener
         except ImportError:
             log.error("pychromecast non installe. pip install pychromecast")
             sys.exit(1)
 
         self._running = True
-        log.info(f"Recherche du Chromecast '{self.chromecast_name}'...")
-
-        # Decouverte via zeroconf
-        chromecasts, self._browser = pychromecast.get_listed_chromecasts(
-            friendly_names=[self.chromecast_name]
-        )
-
-        if not chromecasts:
-            log.error(f"Chromecast '{self.chromecast_name}' introuvable sur le reseau")
-            log.info("Chromecasts detectes: aucun avec ce nom")
-            self._browser.stop_discovery()
-            sys.exit(1)
-
-        self._cast = chromecasts[0]
-        self._cast.wait()
-        log.info(f"Connecte a '{self._cast.name}' ({self._cast.cast_type})")
+        log.info(f"Recherche de l'enceinte '{self.chromecast_name}' {self.target_uuid}...")
+        self._zconf = zeroconf.Zeroconf()
+        self._browser = CastBrowser(SimpleCastListener(), self._zconf)
+        self._browser.start_discovery()
 
         # Boucle de polling (plus fiable que les callbacks pour e-paper)
         try:
+            time.sleep(10)  # laisser mDNS remplir la liste
+            while self._running and not self._resolve_target():
+                time.sleep(60)  # rester en vie : l'enceinte peut revenir (pas de boucle de restart)
             while self._running:
+                if time.time() - self._groups_checked_at > self.GROUP_REFRESH_S:
+                    self._refresh_groups()
                 self._poll()
                 time.sleep(POLL_INTERVAL)
         except KeyboardInterrupt:
@@ -201,6 +287,8 @@ class ChromecastListener:
 
     def stop(self):
         """Arrete proprement le listener."""
+        if not self._running:
+            return
         self._running = False
         if self._browser:
             self._browser.stop_discovery()
@@ -209,13 +297,45 @@ class ChromecastListener:
         if self._last_state in ("PLAYING", "BUFFERING", "PAUSED"):
             self.client.send_idle()
 
+    def _current_track(self) -> TrackInfo:
+        """Premier appareil suivi qui joue (l'enceinte d'abord, puis ses groupes)."""
+        paused = None
+        order = [self.target_uuid] + [u for u in self._casts if u != self.target_uuid]
+        for u in order:
+            cast = self._casts.get(u)
+            if cast is None:
+                continue
+            track = self._extract_track(cast.media_controller)
+            if not track.title and not track.artist:
+                # Appli lancee mais etat media pas encore recu : on le redemande
+                if cast.app_id and time.time() - self._status_asked.get(u, 0) > self.STATUS_REFRESH_S:
+                    self._status_asked[u] = time.time()
+                    try:
+                        cast.media_controller.update_status()
+                    except Exception:
+                        pass
+                continue
+            if track.is_playing():
+                self._set_source(cast.name)
+                return track
+            if track.state == "PAUSED" and paused is None:
+                paused = (track, cast.name)
+        if paused:
+            self._set_source(paused[1])
+            return paused[0]
+        return TrackInfo(state="IDLE")
+
+    def _set_source(self, name: str):
+        if name != self._source:
+            self._source = name
+            log.info(f"Source musique: '{name}'")
+
     def _poll(self):
-        """Verifie l'etat du media controller et reagit aux changements."""
-        if not self._cast:
+        """Verifie l'etat des appareils suivis et reagit aux changements."""
+        if not self._casts:
             return
 
-        mc = self._cast.media_controller
-        track = self._extract_track(mc)
+        track = self._current_track()
 
         # ── Transition vers IDLE ──
         if track.is_idle() or (not track.title and not track.artist):
@@ -306,8 +426,8 @@ def validate_config():
         errors.append("SMARTFRAME_API_TOKEN manquant")
     if not FRAME_ID:
         errors.append("SMARTFRAME_FRAME_ID manquant")
-    if not CHROMECAST_NAME:
-        errors.append("CHROMECAST_NAME manquant")
+    if not CHROMECAST_NAME and not CHROMECAST_UUID:
+        errors.append("CHROMECAST_NAME (ou CHROMECAST_UUID) manquant")
 
     if errors:
         for e in errors:
@@ -338,7 +458,7 @@ def main():
     else:
         log.warning("Impossible de recuperer la config du cadre (verifiez l'URL et le token)")
 
-    listener = ChromecastListener(CHROMECAST_NAME, client)
+    listener = ChromecastListener(CHROMECAST_NAME, client, CHROMECAST_UUID)
 
     # Gestion propre de SIGTERM (systemd)
     def handle_signal(signum, _frame):
